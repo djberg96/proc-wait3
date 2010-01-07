@@ -4,56 +4,56 @@ require 'fileutils'
 
 desc "Clean the generated build files"
 task :clean do |t|
-   Dir.chdir('ext') do
-      sh 'make distclean' if File.exists?('wait3.o')
-      rm 'proc/wait3.' + Config::CONFIG['DLEXT'] rescue nil
-   end
+  Dir.chdir('ext') do
+    sh 'make distclean' if File.exists?('wait3.o')
+    rm 'proc/wait3.' + Config::CONFIG['DLEXT'] rescue nil
+  end
 end
 
 desc "Build the source (but don't install it)"
 task :build => [:patch, :clean] do |t|
-   Dir.chdir('ext') do
-      ruby 'extconf.rb'
-      sh 'make'
-      FileUtils.mv 'wait3.' + Config::CONFIG['DLEXT'], 'proc'
-   end
+  Dir.chdir('ext') do
+    ruby 'extconf.rb'
+    sh 'make'
+    FileUtils.mv 'wait3.' + Config::CONFIG['DLEXT'], 'proc'
+  end
 end
 
 desc "Install the proc-wait3 library"
 task :install => [:build] do |t|
-   sh 'make install'
+  sh 'make install'
 end
 
 desc 'Run the Process.getrusage example program'
 task :example_getrusage => [:build] do
-   ruby '-Iext examples/example_getrusage.rb'
+  ruby '-Iext examples/example_getrusage.rb'
 end
 
 desc 'Run the Process.pause example program'
 task :example_pause => [:build] do
-   ruby '-Iext examples/example_pause.rb'
+  ruby '-Iext examples/example_pause.rb'
 end
 
 desc 'Run the Process.wait3 example program'
 task :example_wait3 => [:build] do
-   ruby '-Iext examples/example_wait3.rb'
+  ruby '-Iext examples/example_wait3.rb'
 end
 
 desc 'Run the Process.wait4 example program'
 task :example_wait4 => [:build] do
-   ruby '-Iext examples/example_wait4.rb'
+  ruby '-Iext examples/example_wait4.rb'
 end
 
 desc 'Run the Process.waitid example program'
 task :example_waitid => [:build] do
-   ruby '-Iext examples/example_waitid.rb'
+  ruby '-Iext examples/example_waitid.rb'
 end
 
 Rake::TestTask.new do |t|
-   task :test => [:build]
-   t.libs << 'ext'
-   t.warning = true
-   t.verbose = true
+  task :test => [:build]
+  t.libs << 'ext'
+  t.warning = true
+  t.verbose = true
 end
 
 desc "Patch your mkmf.rb file so that it supports have_const. Must be root."
@@ -65,7 +65,7 @@ task :patch do |t|
       
       FileUtils.cp(file, 'mkmf.orig') # Backup original
 
-      File.open(file, 'a+'){ |fh|
+      File.open(file, 'a'){ |fh|
          fh.puts %Q{
 # Returns whether or not the constant +const+ can be found in the common
 # header files, or within a +header+ that you provide. If found, a macro is
