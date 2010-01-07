@@ -145,7 +145,7 @@ static VALUE pst_wstopsig(int status)
 
 /*
  * call-seq:
- *    Proc.wait3(flags=nil)
+ *    Process.wait3(flags=nil)
  *
  * Delays its caller until a signal is received or one of its child processes
  * terminates or stops due to tracing.
@@ -210,7 +210,7 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
 #ifdef HAVE_WAIT4
 /*
  * call-seq:
- *    Proc.wait4(pid, flags=0)
+ *    Process.wait4(pid, flags=0)
  *
  * Waits for the given child process to exit. Returns a ProcStat structure.
  * Also sets the $? special global variable.
@@ -279,7 +279,7 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
 #ifdef HAVE_WAITID
 /*
  * call-seq:
- *    Proc.waitid(id_type, id_num=nil, options=nil)
+ *    Process.waitid(id_type, id_num=nil, options=nil)
  *
  * Suspends the calling process until one of its children changes state,
  * returning immediately if a child process changed state prior to the call.
