@@ -43,6 +43,7 @@ have_func('sigsend')
 have_func('getrusage')
 have_func('getdtablesize')
 
+have_struct_member('struct siginfo', 'si_fd', 'signal.h')
 have_struct_member('struct siginfo', 'si_trapno', 'signal.h')
 have_struct_member('struct siginfo', 'si_pc', 'signal.h')
 have_struct_member('struct siginfo', 'si_sysarg', 'signal.h')
@@ -52,6 +53,9 @@ have_struct_member('struct siginfo', 'si_syscall', 'signal.h')
 have_struct_member('struct siginfo', 'si_nsysarg', 'signal.h')
 have_struct_member('struct siginfo', 'si_fault', 'signal.h')
 have_struct_member('struct siginfo', 'si_tstamp', 'signal.h')
+have_struct_member('struct siginfo', 'si_utime', 'signal.h')
+have_struct_member('struct siginfo', 'si_status', 'signal.h')
+have_struct_member('struct siginfo', 'si_stime', 'signal.h')
 
 count = 0
 

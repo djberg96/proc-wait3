@@ -432,9 +432,15 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
        * the si_signo struct member will always be SIGCHLD.
        */
       if(sig == SIGCHLD){
+#ifdef HAVE_ST_SI_UTIME
          v_utime  = ULL2NUM(infop.si_utime);
+#endif
+#ifdef HAVE_ST_SI_STATUS
          v_status = ULL2NUM(infop.si_status);
+#endif
+#ifdef HAVE_ST_SI_STIME
          v_stime  = ULL2NUM(infop.si_stime);
+#endif
       }
 
       if(sig == SIGBUS || sig == SIGFPE || sig == SIGILL || sig == SIGSEGV ||
@@ -449,7 +455,9 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
       }
 
       if(sig == SIGXFSZ){
+#ifdef HAVE_ST_SI_FD
          v_fd = INT2FIX(infop.si_fd);
+#endif
          if(code == POLL_IN || code == POLL_OUT || code == POLL_MSG){
             v_band = LONG2FIX(infop.si_band);
          }
@@ -494,11 +502,11 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
 #endif
 
       v_last_status = rb_struct_new(v_siginfo_struct,
-         INT2FIX(infop.si_signo),   /* Probably SIGCHLD                     */
-         INT2FIX(infop.si_errno),   /* 0 means no error                     */
-         INT2FIX(infop.si_code),    /* Should be anything but SI_NOINFO     */
-         INT2FIX(infop.si_pid),     /* Real PID that sent the signal        */
-         INT2FIX(infop.si_uid),     /* Real UID of process that sent signal */
+         INT2FIX(infop.si_signo),   // Probably SIGCHLD
+         INT2FIX(infop.si_errno),   // 0 means no error
+         INT2FIX(infop.si_code),    // Should be anything but SI_NOINFO
+         INT2FIX(infop.si_pid),     // Real PID that sent the signal
+         INT2FIX(infop.si_uid),     // Real UID of process that sent signal
          v_utime,
          v_status,
          v_stime,
@@ -508,7 +516,9 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
 #ifdef HAVE_ST_SI_PC
          v_pc,
 #endif
+#ifdef HAVE_ST_SI_FD
          v_fd,
+#endif
          v_band,
 #ifdef HAVE_ST_SI_FADDR
          v_addr,
@@ -830,210 +840,221 @@ static VALUE proc_getdtablesize(VALUE mod){
  */
 void Init_wait3()
 {
-   v_procstat_struct =
-      rb_struct_define("ProcStat","pid","status","utime","stime","maxrss",
-         "ixrss", "idrss", "isrss", "minflt","majflt","nswap","inblock",
-         "oublock","msgsnd", "msgrcv","nsignals","nvcsw","nivcsw","stopped",
-         "signaled","exited","success","coredump","exitstatus","termsig",
-         "stopsig",NULL
-      );
+  v_procstat_struct =
+    rb_struct_define("ProcStat","pid","status","utime","stime","maxrss",
+      "ixrss", "idrss", "isrss", "minflt","majflt","nswap","inblock",
+      "oublock","msgsnd", "msgrcv","nsignals","nvcsw","nivcsw","stopped",
+       "signaled","exited","success","coredump","exitstatus","termsig",
+       "stopsig",NULL
+    );
 
-   rb_define_module_function(rb_mProcess, "wait3", proc_wait3, -1);
-   rb_define_module_function(rb_mProcess, "pause", proc_pause, -1);
+  rb_define_module_function(rb_mProcess, "wait3", proc_wait3, -1);
+  rb_define_module_function(rb_mProcess, "pause", proc_pause, -1);
 
 #ifndef RUBY_HAS_RLIMIT
-   rb_define_module_function(rb_mProcess, "getrlimit", proc_getrlimit, 1);
-   rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, -1);
+  rb_define_module_function(rb_mProcess, "getrlimit", proc_getrlimit, 1);
+  rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, -1);
 #endif
 
 #ifdef HAVE_GETDTABLESIZE
-   rb_define_module_function(rb_mProcess,"getdtablesize",proc_getdtablesize,0);
+  rb_define_module_function(rb_mProcess,"getdtablesize",proc_getdtablesize,0);
 #endif
 
 #ifdef HAVE_SIGSEND
-   rb_define_module_function(rb_mProcess, "sigsend", proc_sigsend, -1);
+  rb_define_module_function(rb_mProcess, "sigsend", proc_sigsend, -1);
 #endif
 
 #ifdef HAVE_WAIT4
-   rb_define_module_function(rb_mProcess, "wait4", proc_wait4, -1);
+  rb_define_module_function(rb_mProcess, "wait4", proc_wait4, -1);
 #endif
 
 #ifdef HAVE_GETRUSAGE
-   v_usage_struct =
-      rb_struct_define("RUsage","utime","stime","maxrss","ixrss","idrss",
-         "isrss","minflt","majflt","nswap","inblock","oublock","msgsnd",
-         "msgrcv","nsignals","nvcsw","nivcsw",NULL
-      );
+  v_usage_struct =
+    rb_struct_define("RUsage","utime","stime","maxrss","ixrss","idrss",
+      "isrss","minflt","majflt","nswap","inblock","oublock","msgsnd",
+      "msgrcv","nsignals","nvcsw","nivcsw",NULL
+    );
 
-   rb_define_module_function(rb_mProcess, "getrusage", proc_getrusage, -1);
+  rb_define_module_function(rb_mProcess, "getrusage", proc_getrusage, -1);
 #endif
 
 #ifdef HAVE_WAITID
-   v_siginfo_struct =
-      rb_struct_define("SigInfo","signo","errno","code","pid","uid",
-         "utime","status","stime"
+  v_siginfo_struct =
+    rb_struct_define("SigInfo", "signo", "errno", "code", "pid", "uid"
+#ifdef HAVE_ST_SI_UTIME
+      ,"utime"
+#endif
+#ifdef HAVE_ST_SI_STATUS
+      ,"status"
+#endif
+#ifdef HAVE_ST_SI_STIME
+      ,"stime"
+#endif
 #ifdef HAVE_ST_SI_TRAPNO
-         ,"trapno"
+      ,"trapno"
 #endif
 #ifdef HAVE_ST_SI_PC
-         ,"pc"
+      ,"pc"
 #endif
-         ,"fd","band"
+#ifdef HAVE_ST_SI_FD
+      ,"fd"
+#endif
+      ,"band"
 #ifdef HAVE_ST_SI_FADDR
-         ,"faddr"
+      ,"faddr"
 #endif
 #ifdef HAVE_ST_SI_TSTAMP
-         ,"tstamp"
+      ,"tstamp"
 #endif
 #ifdef HAVE_ST_SI_SYSCALL
-         ,"syscall"
+      ,"syscall"
 #endif
 #ifdef HAVE_ST_SI_NSYSARG
-         ,"nsysarg"
+      ,"nsysarg"
 #endif
 #ifdef HAVE_ST_SI_FAULT
-         ,"fault"
+      ,"fault"
 #endif
 #ifdef HAVE_ST_SI_SYSARG
-         ,"sysarg"
+      ,"sysarg"
 #endif
 #ifdef HAVE_ST_SI_MSTATE
-         ,"mstate"
+      ,"mstate"
 #endif
-         ,"entity", NULL
-      );
+      ,"entity", NULL
+    );
 
-   rb_define_module_function(rb_mProcess, "waitid", proc_waitid, -1);
+  rb_define_module_function(rb_mProcess, "waitid", proc_waitid, -1);
 
 #ifdef WCONTINUED
-   /* The status of any child that was stopped and then continued */
-   rb_define_const(rb_mProcess, "WCONTINUED", INT2FIX(WCONTINUED));
+  /* The status of any child that was stopped and then continued */
+  rb_define_const(rb_mProcess, "WCONTINUED", INT2FIX(WCONTINUED));
 #endif
 
 #ifdef WEXITED
-   /* The status of any child that has terminated */
-   rb_define_const(rb_mProcess, "WEXITED", INT2FIX(WEXITED));
+  /* The status of any child that has terminated */
+  rb_define_const(rb_mProcess, "WEXITED", INT2FIX(WEXITED));
 #endif
 
 #ifdef WNOWAIT
-   /* Keeps the process whose status was returned in a waitable state */
-   rb_define_const(rb_mProcess, "WNOWAIT", INT2FIX(WNOWAIT));
+  /* Keeps the process whose status was returned in a waitable state */
+  rb_define_const(rb_mProcess, "WNOWAIT", INT2FIX(WNOWAIT));
 #endif
 
 #ifdef WSTOPPED
-   /* The status of any child that has stopped as the result of a signal */
-   rb_define_const(rb_mProcess, "WSTOPPED", INT2FIX(WSTOPPED));
+  /* The status of any child that has stopped as the result of a signal */
+  rb_define_const(rb_mProcess, "WSTOPPED", INT2FIX(WSTOPPED));
 #endif
 
 #ifdef WTRAPPED
-   /* Waits for any child process to become trapped or reach a breakpoint */
-   rb_define_const(rb_mProcess, "WTRAPPED", INT2FIX(WTRAPPED));
+  /* Waits for any child process to become trapped or reach a breakpoint */
+  rb_define_const(rb_mProcess, "WTRAPPED", INT2FIX(WTRAPPED));
 #endif
 #endif
 
-   /* Because core Ruby already defines a Process::GID and Process::UID,
-    * I am forced to keep the leading 'P_' for these constants.
-    */
+  /* Because core Ruby already defines a Process::GID and Process::UID,
+   * I am forced to keep the leading 'P_' for these constants.
+   */
 
 #ifdef HAVE_CONST_P_ALL
-   /* Any child */
-   rb_define_const(rb_mProcess, "P_ALL", INT2FIX(P_ALL));
+  /* Any child */
+  rb_define_const(rb_mProcess, "P_ALL", INT2FIX(P_ALL));
 #endif
 
 #ifdef HAVE_CONST_P_PGID
-   /* Process group ID */
-   rb_define_const(rb_mProcess, "P_PGID", INT2FIX(P_PGID));
+  /* Process group ID */
+  rb_define_const(rb_mProcess, "P_PGID", INT2FIX(P_PGID));
 #endif
 
 #ifdef HAVE_CONST_P_PID
-   /* Process ID */
-   rb_define_const(rb_mProcess, "P_PID", INT2FIX(P_PID));
+  /* Process ID */
+  rb_define_const(rb_mProcess, "P_PID", INT2FIX(P_PID));
 #endif
 
 #ifdef HAVE_CONST_P_CID
-   /* Process scheduler class ID */
-   rb_define_const(rb_mProcess, "P_CID", INT2FIX(P_CID));
+  /* Process scheduler class ID */
+  rb_define_const(rb_mProcess, "P_CID", INT2FIX(P_CID));
 #endif
 
 #ifdef HAVE_CONST_P_GID
-   /* Non-system process effective group ID */
-   rb_define_const(rb_mProcess, "P_GID", INT2FIX(P_GID));
+  /* Non-system process effective group ID */
+  rb_define_const(rb_mProcess, "P_GID", INT2FIX(P_GID));
 #endif
 
 #ifdef HAVE_CONST_P_MYID
-   /* Process ID of the calling process */
-   rb_define_const(rb_mProcess, "P_MYID", INT2FIX(P_MYID));
+  /* Process ID of the calling process */
+  rb_define_const(rb_mProcess, "P_MYID", INT2FIX(P_MYID));
 #endif
 
 #ifdef HAVE_CONST_P_SID
-   /* Non-system process session ID */
-   rb_define_const(rb_mProcess, "P_SID", INT2FIX(P_SID));
+  /* Non-system process session ID */
+  rb_define_const(rb_mProcess, "P_SID", INT2FIX(P_SID));
 #endif
 
 #ifdef HAVE_CONST_P_UID
-   /* Non-system process effective user ID */
-   rb_define_const(rb_mProcess, "P_UID", INT2FIX(P_UID));
+  /* Non-system process effective user ID */
+  rb_define_const(rb_mProcess, "P_UID", INT2FIX(P_UID));
 #endif
 
 #ifdef HAVE_CONST_P_TASKID
-   /* Process task ID */
-   rb_define_const(rb_mProcess, "P_TASKID", INT2FIX(P_TASKID));
+  /* Process task ID */
+  rb_define_const(rb_mProcess, "P_TASKID", INT2FIX(P_TASKID));
 #endif
 
 #ifdef HAVE_CONST_P_PROJID
-   /* Process project ID */
-   rb_define_const(rb_mProcess, "P_PROJID", INT2FIX(P_PROJID));
+  /* Process project ID */
+  rb_define_const(rb_mProcess, "P_PROJID", INT2FIX(P_PROJID));
 #endif
 
-   /* Constants for getrlimit, setrlimit.  It appears that these are defined
-    * by Ruby as of 1.8.5. We'll only set the RLIMIT constants for Ruby 1.8.4
-    * or earlier.
-    */
+  /* Constants for getrlimit, setrlimit.  It appears that these are defined
+   * by Ruby as of 1.8.5. We'll only set the RLIMIT constants for Ruby 1.8.4
+   * or earlier.
+   */
 #ifndef RUBY_HAS_RLIMIT
-   /* Maximum size of the process' mapped address space, in bytes */
-   rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
+  /* Maximum size of the process' mapped address space, in bytes */
+  rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
 
-   /* Maximum size of a core file in bytes that may be created */
-   rb_define_const(rb_mProcess, "RLIMIT_CORE", INT2FIX(RLIMIT_CORE));
+  /* Maximum size of a core file in bytes that may be created */
+  rb_define_const(rb_mProcess, "RLIMIT_CORE", INT2FIX(RLIMIT_CORE));
 
-   /* Maximum amount of CPU time, in seconds, the process is allowed to use */
-   rb_define_const(rb_mProcess, "RLIMIT_CPU", INT2FIX(RLIMIT_CPU));
+  /* Maximum amount of CPU time, in seconds, the process is allowed to use */
+  rb_define_const(rb_mProcess, "RLIMIT_CPU", INT2FIX(RLIMIT_CPU));
 
-   /* Maximum size of the process' heap, in bytes */
-   rb_define_const(rb_mProcess, "RLIMIT_DATA", INT2FIX(RLIMIT_DATA));
+  /* Maximum size of the process' heap, in bytes */
+  rb_define_const(rb_mProcess, "RLIMIT_DATA", INT2FIX(RLIMIT_DATA));
 
-   /* Maximum size of a file, in bytes, that the process may create */
-   rb_define_const(rb_mProcess, "RLIMIT_FSIZE", INT2FIX(RLIMIT_FSIZE));
+  /* Maximum size of a file, in bytes, that the process may create */
+  rb_define_const(rb_mProcess, "RLIMIT_FSIZE", INT2FIX(RLIMIT_FSIZE));
 
-   /* The maximum value that the kernel may assign to a file descriptor */
-   rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
+  /* The maximum value that the kernel may assign to a file descriptor */
+  rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
 
-   /* The maximum size of the process' stack, in bytes */
-   rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
+  /* The maximum size of the process' stack, in bytes */
+  rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
 
-   /* No limit on the resource */
-   rb_define_const(rb_mProcess, "RLIM_INFINITY", RLIM2NUM(RLIM_INFINITY));
+  /* No limit on the resource */
+  rb_define_const(rb_mProcess, "RLIM_INFINITY", RLIM2NUM(RLIM_INFINITY));
 
-   /* Set the limit to the corresponding saved hard limit */
-   rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", RLIM2NUM(RLIM_SAVED_MAX));
+  /* Set the limit to the corresponding saved hard limit */
+  rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", RLIM2NUM(RLIM_SAVED_MAX));
 
-   /* Set the limit to the corresponding saved soft limit */
-   rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", RLIM2NUM(RLIM_SAVED_CUR));
+  /* Set the limit to the corresponding saved soft limit */
+  rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", RLIM2NUM(RLIM_SAVED_CUR));
 
 #ifdef RLIMIT_MEMLOCK
-   /* The maximum number of bytes that may be locked into RAM */
-   rb_define_const(rb_mProcess, "RLIMIT_MEMLOCK", INT2FIX(RLIMIT_MEMLOCK));
+  /* The maximum number of bytes that may be locked into RAM */
+  rb_define_const(rb_mProcess, "RLIMIT_MEMLOCK", INT2FIX(RLIMIT_MEMLOCK));
 #endif
 
 #ifdef RLIMIT_VMEM
-   /* Synonym for RLIMIT_AS */
-   rb_define_const(rb_mProcess, "RLIMIT_VMEM", INT2FIX(RLIMIT_VMEM));
+  /* Synonym for RLIMIT_AS */
+  rb_define_const(rb_mProcess, "RLIMIT_VMEM", INT2FIX(RLIMIT_VMEM));
 #endif
 #endif
 
-   /* 1.5.5: The version of the proc-wait3 library */
-   rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_new2("1.5.5"));
+  /* 1.5.6: The version of the proc-wait3 library */
+  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_new2("1.5.6"));
 
-   /* Define this last in our Init_wait3 function */
-   rb_define_readonly_variable("$?", &v_last_status);
+  /* Define this last in our Init_wait3 function */
+  rb_define_readonly_variable("$?", &v_last_status);
 }
