@@ -5,8 +5,9 @@ require 'fileutils'
 desc "Clean the generated build files"
 task :clean do |t|
   Dir.chdir('ext') do
-    sh 'make distclean' if File.exists?('wait3.o')
+    sh 'make distclean' rescue nil
     rm 'proc/wait3.' + Config::CONFIG['DLEXT'] rescue nil
+    rm_rf 'conftest.dSYM' if File.exists?('conftest.dSYM') # OS X
   end
 end
 
