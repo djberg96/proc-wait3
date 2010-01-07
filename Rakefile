@@ -24,29 +24,37 @@ task :install => [:build] do |t|
   sh 'make install'
 end
 
-desc 'Run the Process.getrusage example program'
-task :example_getrusage => [:build] do
-  ruby '-Iext examples/example_getrusage.rb'
+desc "Build the gem"
+task :gem do
+  spec = eval(IO.read('proc-wait3.gemspec'))
+  Gem::Builder.new(spec).build
 end
 
-desc 'Run the Process.pause example program'
-task :example_pause => [:build] do
-  ruby '-Iext examples/example_pause.rb'
-end
+namespace :example do
+  desc 'Run the Process.getrusage example program'
+  task :getrusage => [:build] do
+    ruby '-Iext examples/example_getrusage.rb'
+  end
 
-desc 'Run the Process.wait3 example program'
-task :example_wait3 => [:build] do
-  ruby '-Iext examples/example_wait3.rb'
-end
+  desc 'Run the Process.pause example program'
+  task :pause => [:build] do
+    ruby '-Iext examples/example_pause.rb'
+  end
 
-desc 'Run the Process.wait4 example program'
-task :example_wait4 => [:build] do
-  ruby '-Iext examples/example_wait4.rb'
-end
+  desc 'Run the Process.wait3 example program'
+  task :wait3 => [:build] do
+    ruby '-Iext examples/example_wait3.rb'
+  end
 
-desc 'Run the Process.waitid example program'
-task :example_waitid => [:build] do
-  ruby '-Iext examples/example_waitid.rb'
+  desc 'Run the Process.wait4 example program'
+  task :wait4 => [:build] do
+    ruby '-Iext examples/example_wait4.rb'
+  end
+
+  desc 'Run the Process.waitid example program'
+  task :waitid => [:build] do
+    ruby '-Iext examples/example_waitid.rb'
+  end
 end
 
 Rake::TestTask.new do |t|
