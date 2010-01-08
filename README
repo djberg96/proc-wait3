@@ -17,19 +17,6 @@
   Linux users who compile with gcc -Wall will notice a few warnings. These
   are harmless (and unavoidable atm).
 
-= Applying the mkmf.diff patch
-  In order to install this package, you will need to patch your mkmf.rb file
-  with the provided diff file.  This is necessary because I need a way to
-  determine if certain idtype_t enum (const) values are defined. The patch adds
-  a "have_const" method (and does nothing else). See ruby-core:4422 and related
-  threads for more information. Also available as ruby-Patches-1486 on the
-  RubyForge project page for Ruby.
-
-  To apply the patch, simply run "ruby patch.rb". Note that you may need to be
-  root to apply the patch.  This may fail in Ruby 1.8.5 or later.  Since there's
-  no good way to make a compatible diff, you will just have to edit the mkmf.rb
-  file manually.
-
 = Integration with Ruby's process.c
 
   I considered simply providing a patch to the core process.c file, but I
