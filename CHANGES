@@ -1,7 +1,11 @@
-== 1.5.6 - ???
+== 1.5.6 - 7-Jan-2010
 * Checks are now made for the si_fd, si_utime, si_status and si_stime siginfo_t
-  struct members. This addresses build failures on OS X.
+  struct members. This addresses build failures on OS X 10.5 and later where
+  those three members went mysteriously MIA.
+* No longer attempts to modify your mkmf.rb file. The have_const method is
+  now defined within the extconf.rb file if not already found.
 * Some gemspec and Rakefile refactoring.
+* Updates to the README.
 * Source code moved to github.
 
 == 1.5.5 - 8-Aug-2009
