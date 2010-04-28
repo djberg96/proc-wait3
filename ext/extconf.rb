@@ -4,6 +4,29 @@
 ########################################################
 require 'mkmf'
 
+# We need this for older versions of Ruby.
+def have_const(const, header = nil, opt = "", &b)
+   checking_for const do
+      header = cpp_include(header)
+      if try_compile(<<"SRC", opt, &b)
+#{COMMON_HEADERS}
+#{header}
+/* top */
+static int t = #{const};
+SRC
+         $defs.push(
+            format(
+               "-DHAVE_CONST_%s",
+               const.strip.upcase.tr_s("^A-Z0-9_", "_")
+            )
+         )
+         true
+      else
+         false
+      end
+   end
+end
+
 # Check to see if Ruby has already defined the various RLIMIT constants
 # and set an appropriate macro in the source.
 #
