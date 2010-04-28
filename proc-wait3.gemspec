@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.extensions = ['ext/extconf.rb']
   spec.files      = Dir['**/*'].reject{ |f| f.include?('git') }
 
-  spec.required_ruby_version = '>= 1.8.2'
+  spec.required_ruby_version = '>= 1.8.6'
 
   spec.rubyforge_project = 'shards'
   spec.extra_rdoc_files  = ['CHANGES', 'README', 'MANIFEST', 'ext/proc/wait3.c']
