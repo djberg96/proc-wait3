@@ -4,57 +4,55 @@
 ########################################################
 require 'mkmf'
 
-# Not defined in older versions of Ruby.
-unless defined? have_const
-  def have_const(const, header = nil, opt = "", &b)
-     checking_for const do
-        header = cpp_include(header)
-        if try_compile(<<"SRC", opt, &b)
-#\{COMMON_HEADERS\}
-#\{header\}
+# We need this for older versions of Ruby.
+def have_const(const, header = nil, opt = "", &b)
+   checking_for const do
+      header = cpp_include(header)
+      if try_compile(<<"SRC", opt, &b)
+#{COMMON_HEADERS}
+#{header}
 /* top */
-static int t = #\{const\};
+static int t = #{const};
 SRC
-           $defs.push(
-              format(
-                 "-DHAVE_CONST_%s",
-                 const.strip.upcase.tr_s("^A-Z0-9_", "_")
-              )
-           )
-           true
-        else
-           false
-        end
-     end
-  end
+         $defs.push(
+            format(
+               "-DHAVE_CONST_%s",
+               const.strip.upcase.tr_s("^A-Z0-9_", "_")
+            )
+         )
+         true
+      else
+         false
+      end
+   end
 end
 
 # Check to see if Ruby has already defined the various RLIMIT constants
 # and set an appropriate macro in the source.
 #
 begin
-   Process::RLIMIT_AS
+  Process::RLIMIT_AS
 rescue
-   check_sizeof('int')
-   check_sizeof('long')
-   check_sizeof('long long')
-   unless check_sizeof('rlim_t', 'sys/resource.h')
-      if (2**33).is_a?(Fixnum)
-         $defs.push('-DSIZEOF_RLIM_T 8') # 64 bit
-      else
-         $defs.push('-DSIZEOF_RLIM_T 4') # 32 bit
-      end
-   end
+  check_sizeof('int')
+  check_sizeof('long')
+  check_sizeof('long long')
+  unless check_sizeof('rlim_t', 'sys/resource.h')
+    if (2**33).is_a?(Fixnum)
+      $defs.push('-DSIZEOF_RLIM_T 8') # 64 bit
+    else
+      $defs.push('-DSIZEOF_RLIM_T 4') # 32 bit
+    end
+  end
 else
-   $defs.push('-DRUBY_HAS_RLIMIT') # Used within wait.c
+  $defs.push('-DRUBY_HAS_RLIMIT') # Used within wait.c
 end
 
 have_header('wait.h')
 
 # wait3 is mandatory.
 unless have_func('wait3')
-   STDERR.puts 'wait3() function not found'
-   exit
+  STDERR.puts 'wait3() function not found'
+  exit
 end
 
 # Yay, Linux
