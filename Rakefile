@@ -64,3 +64,5 @@ Rake::TestTask.new do |t|
   t.warning = true
   t.verbose = true
 end
+
+task :default => :test

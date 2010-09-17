@@ -4,10 +4,21 @@
   and setrlimit methods.
 
 = Installation
-
   gem install proc-wait3
 
-== Tested Platforms
+= Synopsis
+  require 'proc/wait3'
+
+  pid = fork{
+    sleep 1
+    exit 2
+  }
+
+  puts Time.now.to_s
+  Process.wait3
+  puts $?.exitstatus # => 2
+
+= Tested Platforms
   * Solaris
   * Linux
   * FreeBSD
