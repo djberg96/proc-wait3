@@ -1,15 +1,19 @@
 require 'rake'
+require 'rake/clean'
 require 'rake/testtask'
 require 'fileutils'
+require 'rbconfig'
+include Config
 
-desc "Clean the generated build files"
-task :clean do |t|
-  Dir.chdir('ext') do
-    sh 'make distclean' rescue nil
-    rm 'proc/wait3.' + Config::CONFIG['DLEXT'] rescue nil
-    rm_rf 'conftest.dSYM' if File.exists?('conftest.dSYM') # OS X
-  end
-end
+CLEAN.include(
+  '**/*.gem',               # Gem files
+  '**/*.rbc',               # Rubinius
+  '**/*.o',                 # C object file
+  '**/*.log',               # Ruby extension build log
+  '**/Makefile',            # C Makefile
+  '**/conftest.dSYM',       # OS X build directory
+  "**/*.#{CONFIG['DLEXT']}" # C shared object
+)
 
 desc "Build the source (but don't install it)"
 task :build => [:clean] do |t|
@@ -20,15 +24,18 @@ task :build => [:clean] do |t|
   end
 end
 
-desc "Install the proc-wait3 library"
-task :install => [:build] do |t|
-  sh 'make install'
-end
+namespace :gem do
+  desc "Create the proc-wait3 gem"
+  task :create => [:clean] do
+    spec = eval(IO.read('proc-wait3.gemspec'))
+    Gem::Builder.new(spec).build
+  end
 
-desc "Build the gem"
-task :gem do
-  spec = eval(IO.read('proc-wait3.gemspec'))
-  Gem::Builder.new(spec).build
+  desc "Install the proc-wait3 gem"
+  task :install => [:create] do |t|
+    file = Dir['*.gem'].first
+    sh "gem install #{file}"
+  end
 end
 
 namespace :example do
