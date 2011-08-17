@@ -429,6 +429,10 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
       int sig = infop.si_signo;
       int code = infop.si_code;
 
+#if defined(HAVE_ST_SI_SYSARG) || defined(HAVE_ST_SI_MSTATE)
+      int i = 0;
+#endif
+
       /* If Process.waitid returns because a child process was found that
        * satisfies the conditions indicated by +id_type+ and +options+, then
        * the si_signo struct member will always be SIGCHLD.
@@ -474,7 +478,6 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
             rb_ary_push(v_sysarg, LONG2FIX(infop.si_sysarg[i]));
 #endif
 #ifdef HAVE_ST_SI_MSTATE
-         int i = 0;
          int msize = sizeof(infop.si_mstate) / sizeof(infop.si_mstate[0]);
          v_state  = rb_ary_new();
 
