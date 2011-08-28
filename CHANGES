@@ -1,3 +1,8 @@
+== 1.6.0 - 28-Aug-2011
+* Removed the getrlimit and setrlimit methods. Ruby has supported this since
+  Ruby 1.8.5, so I think it's time to dump them.
+* Fixed two build warnings regarding unused variables and one 32/64 cast warning.
+
 == 1.5.6 - 7-Jan-2010
 * Checks are now made for the si_fd, si_utime, si_status and si_stime siginfo_t
   struct members. This addresses build failures on OS X 10.5 and later where
