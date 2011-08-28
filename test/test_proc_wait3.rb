@@ -37,7 +37,7 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   end
 
   def test_wait3_version
-    assert_equal('1.5.6', Process::WAIT3_VERSION)
+    assert_equal('1.6.0', Process::WAIT3_VERSION)
   end
 
   def test_wait3_basic
