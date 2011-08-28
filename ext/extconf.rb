@@ -29,26 +29,6 @@ SRC
   end
 end
 
-# Check to see if Ruby has already defined the various RLIMIT constants
-# and set an appropriate macro in the source.
-#
-begin
-  Process::RLIMIT_AS
-rescue
-  check_sizeof('int')
-  check_sizeof('long')
-  check_sizeof('long long')
-  unless check_sizeof('rlim_t', 'sys/resource.h')
-    if (2**33).is_a?(Fixnum)
-      $defs.push('-DSIZEOF_RLIM_T 8') # 64 bit
-    else
-      $defs.push('-DSIZEOF_RLIM_T 4') # 32 bit
-    end
-  end
-else
-  $defs.push('-DRUBY_HAS_RLIMIT') # Used within wait.c
-end
-
 have_header('wait.h')
 
 # wait3 is mandatory.

@@ -765,66 +765,6 @@ static VALUE proc_getrusage(int argc, VALUE* argv, VALUE mod){
 }
 #endif
 
-#ifndef RUBY_HAS_RLIMIT
-/*
- * call-seq:
- *    Process.getrlimit(resource) => [cur_limit, max_limit]
- *
- * Returns a two element array consisting of the hard and soft limit
- * for the current process for the given +resource+.  The array consists of
- * either numeric values or the word "infinite".
- */
-static VALUE proc_getrlimit(VALUE mod, VALUE v_resource){
-   struct rlimit limits;
-   VALUE v_array = rb_ary_new();
-
-   rb_secure(2);
-
-   if(getrlimit(NUM2INT(v_resource), &limits) < 0)
-      rb_sys_fail("getrlimit");
-
-   if(limits.rlim_cur == RLIM_INFINITY)
-      rb_ary_push(v_array, rb_str_new2("infinity"));
-   else
-      rb_ary_push(v_array, INT2FIX(limits.rlim_cur));
-
-   if(limits.rlim_max == RLIM_INFINITY)
-      rb_ary_push(v_array, rb_str_new2("infinity"));
-   else
-      rb_ary_push(v_array, INT2FIX(limits.rlim_max));
-
-   return v_array;
-}
-
-/*
- * call-seq:
- *    Process.setrlimit(resource, current, max=nil) => nil
- *
- * Sets the +current+ (soft) and +max+ (hard) limit for the given +resource+
- * for the current process.  If +max+ is nil it is set to the same value as
- * +current+.
- */
-static VALUE proc_setrlimit(int argc, VALUE* argv, VALUE mod){
-   VALUE v_res, v_cur, v_max;
-   struct rlimit limits;
-
-   rb_secure(2);
-
-   rb_scan_args(argc, argv, "21", &v_res, &v_cur, &v_max);
-
-   if(NIL_P(v_max))
-      v_max = v_cur;
-
-   limits.rlim_cur = RLIM2NUM(v_cur);
-   limits.rlim_max = RLIM2NUM(v_max);
-
-   if(setrlimit(NUM2UINT(v_res), &limits) < 0)
-      rb_sys_fail("setrlimit");
-
-   return Qnil;
-}
-#endif
-
 #ifdef HAVE_GETDTABLESIZE
 /*
  * call-seq:
@@ -855,11 +795,6 @@ void Init_wait3()
 
   rb_define_module_function(rb_mProcess, "wait3", proc_wait3, -1);
   rb_define_module_function(rb_mProcess, "pause", proc_pause, -1);
-
-#ifndef RUBY_HAS_RLIMIT
-  rb_define_module_function(rb_mProcess, "getrlimit", proc_getrlimit, 1);
-  rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, -1);
-#endif
 
 #ifdef HAVE_GETDTABLESIZE
   rb_define_module_function(rb_mProcess,"getdtablesize",proc_getdtablesize,0);
@@ -1011,54 +946,8 @@ void Init_wait3()
   rb_define_const(rb_mProcess, "P_PROJID", INT2FIX(P_PROJID));
 #endif
 
-  /* Constants for getrlimit, setrlimit.  It appears that these are defined
-   * by Ruby as of 1.8.5. We'll only set the RLIMIT constants for Ruby 1.8.4
-   * or earlier.
-   */
-#ifndef RUBY_HAS_RLIMIT
-  /* Maximum size of the process' mapped address space, in bytes */
-  rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
-
-  /* Maximum size of a core file in bytes that may be created */
-  rb_define_const(rb_mProcess, "RLIMIT_CORE", INT2FIX(RLIMIT_CORE));
-
-  /* Maximum amount of CPU time, in seconds, the process is allowed to use */
-  rb_define_const(rb_mProcess, "RLIMIT_CPU", INT2FIX(RLIMIT_CPU));
-
-  /* Maximum size of the process' heap, in bytes */
-  rb_define_const(rb_mProcess, "RLIMIT_DATA", INT2FIX(RLIMIT_DATA));
-
-  /* Maximum size of a file, in bytes, that the process may create */
-  rb_define_const(rb_mProcess, "RLIMIT_FSIZE", INT2FIX(RLIMIT_FSIZE));
-
-  /* The maximum value that the kernel may assign to a file descriptor */
-  rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
-
-  /* The maximum size of the process' stack, in bytes */
-  rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
-
-  /* No limit on the resource */
-  rb_define_const(rb_mProcess, "RLIM_INFINITY", RLIM2NUM(RLIM_INFINITY));
-
-  /* Set the limit to the corresponding saved hard limit */
-  rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", RLIM2NUM(RLIM_SAVED_MAX));
-
-  /* Set the limit to the corresponding saved soft limit */
-  rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", RLIM2NUM(RLIM_SAVED_CUR));
-
-#ifdef RLIMIT_MEMLOCK
-  /* The maximum number of bytes that may be locked into RAM */
-  rb_define_const(rb_mProcess, "RLIMIT_MEMLOCK", INT2FIX(RLIMIT_MEMLOCK));
-#endif
-
-#ifdef RLIMIT_VMEM
-  /* Synonym for RLIMIT_AS */
-  rb_define_const(rb_mProcess, "RLIMIT_VMEM", INT2FIX(RLIMIT_VMEM));
-#endif
-#endif
-
-  /* 1.5.6: The version of the proc-wait3 library */
-  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_new2("1.5.6"));
+  /* 1.6.0: The version of the proc-wait3 library */
+  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_new2("1.6.0"));
 
   /* Define this last in our Init_wait3 function */
   rb_define_readonly_variable("$?", &v_last_status);
