@@ -320,7 +320,6 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
    idtype_t idtype;
    id_t id = 0;
    int options = 0;
-   int i = 0;
 
    rb_scan_args(argc, argv, "12", &v_type, &v_id, &v_options);
 
@@ -395,7 +394,10 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
       );
    }
    else{
-      VALUE v_utime = Qnil, v_status = Qnil, v_stime = Qnil, v_fd = Qnil;
+      VALUE v_utime = Qnil, v_status = Qnil, v_stime = Qnil;
+#ifdef HAVE_ST_SI_FD
+      VALUE v_fd = Qnil;
+#endif
 #ifdef HAVE_ST_SI_TRAPNO
       VALUE v_trapno = Qnil;
 #endif
@@ -472,6 +474,7 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
             rb_ary_push(v_sysarg, LONG2FIX(infop.si_sysarg[i]));
 #endif
 #ifdef HAVE_ST_SI_MSTATE
+         int i = 0;
          int msize = sizeof(infop.si_mstate) / sizeof(infop.si_mstate[0]);
          v_state  = rb_ary_new();
 
@@ -570,12 +573,14 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
  */
 static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
    VALUE v_signals;
-   int i, len;
+   int i;
+   long len;
 
    rb_scan_args(argc, argv, "0*", &v_signals);
 
-   /* Iterate over each signal, calling sigset for each one */
+   // Iterate over each signal, calling sigset for each one
    len = RARRAY_LEN(v_signals);
+
    if(len > 0){
       VALUE v_val;
       char signame[SIG2STR_MAX];
