@@ -1,6 +1,6 @@
 == 1.6.0 - 28-Aug-2011
-* Removed the getrlimit and setrlimit methods. Ruby has supported this since
-  Ruby 1.8.5, so I think it's time to dump them.
+* Removed the getrlimit and setrlimit methods. Ruby has supported these methods
+  since Ruby 1.8.5, so I think it's time to finally dump them.
 * Fixed two build warnings regarding unused variables and one 32/64 cast warning.
 
 == 1.5.6 - 7-Jan-2010
