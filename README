@@ -1,7 +1,6 @@
 = Description
   Adds the wait3, wait4, waitid, pause, sigsend, and getrusage methods to
-  the Process module. For Ruby 1.8.4 or earlier, it also adds the getrlimit
-  and setrlimit methods.
+  the Process module.
 
 = Installation
   gem install proc-wait3
