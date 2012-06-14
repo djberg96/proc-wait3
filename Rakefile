@@ -3,7 +3,7 @@ require 'rake/clean'
 require 'rake/testtask'
 require 'fileutils'
 require 'rbconfig'
-include Config
+include RbConfig
 
 CLEAN.include(
   '**/*.gem',               # Gem files
@@ -14,15 +14,6 @@ CLEAN.include(
   '**/conftest.dSYM',       # OS X build directory
   "**/*.#{CONFIG['DLEXT']}" # C shared object
 )
-
-desc "Build the source (but don't install it)"
-task :build => [:clean] do |t|
-  Dir.chdir('ext') do
-    ruby 'extconf.rb'
-    sh 'make'
-    FileUtils.mv 'wait3.' + Config::CONFIG['DLEXT'], 'proc'
-  end
-end
 
 namespace :gem do
   desc "Create the proc-wait3 gem"
@@ -40,34 +31,33 @@ end
 
 namespace :example do
   desc 'Run the Process.getrusage example program'
-  task :getrusage => [:build] do
+  task :getrusage do
     ruby '-Iext examples/example_getrusage.rb'
   end
 
   desc 'Run the Process.pause example program'
-  task :pause => [:build] do
+  task :pause do
     ruby '-Iext examples/example_pause.rb'
   end
 
   desc 'Run the Process.wait3 example program'
-  task :wait3 => [:build] do
+  task :wait3 do
     ruby '-Iext examples/example_wait3.rb'
   end
 
   desc 'Run the Process.wait4 example program'
-  task :wait4 => [:build] do
+  task :wait4 do
     ruby '-Iext examples/example_wait4.rb'
   end
 
   desc 'Run the Process.waitid example program'
-  task :waitid => [:build] do
+  task :waitid do
     ruby '-Iext examples/example_waitid.rb'
   end
 end
 
 Rake::TestTask.new do |t|
-  task :test => [:build]
-  t.libs << 'ext'
+  task :test => [:clean]
   t.warning = true
   t.verbose = true
 end
