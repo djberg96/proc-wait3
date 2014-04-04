@@ -3,7 +3,7 @@ require 'rake/clean'
 require 'rake/testtask'
 require 'fileutils'
 require 'rbconfig'
-include Config
+include RbConfig
 
 CLEAN.include(
   '**/*.gem',               # Gem files
@@ -20,7 +20,7 @@ task :build => [:clean] do |t|
   Dir.chdir('ext') do
     ruby 'extconf.rb'
     sh 'make'
-    FileUtils.mv 'wait3.' + Config::CONFIG['DLEXT'], 'proc'
+    FileUtils.mv 'wait3.' + RbConfig::CONFIG['DLEXT'], 'proc'
   end
 end
 
