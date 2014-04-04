@@ -28,7 +28,12 @@ namespace :gem do
   desc "Create the proc-wait3 gem"
   task :create => [:clean] do
     spec = eval(IO.read('proc-wait3.gemspec'))
-    Gem::Builder.new(spec).build
+    if Gem::VERSION < "2.0"
+      Gem::Builder.new(spec).build
+    else
+      require 'rubygems/package'
+      Gem::Package.build(spec)
+    end
   end
 
   desc "Install the proc-wait3 gem"
