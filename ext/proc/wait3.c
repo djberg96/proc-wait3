@@ -9,7 +9,7 @@
 #include <sys/wait.h>
 #endif
 
-#ifdef HAVE_WAITID
+#if defined(HAVE_WAITID) || defined(HAVE_SIGSET)
 #include <signal.h>
 #endif
 
