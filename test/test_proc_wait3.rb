@@ -139,6 +139,7 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   end
 
   test "waitid method raises expected error if invalid argument is passed" do
+    omit_if(@@hpux || @@darwin || @@freebsd, 'waitid test skipped on this platform')
     fork{ sleep 0.5 }
     assert_raises(Errno::ECHILD, Errno::EINVAL){ Process.waitid(Process::P_PID, 99999999, Process::WEXITED) }
   end
