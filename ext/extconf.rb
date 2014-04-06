@@ -44,6 +44,7 @@ have_func('strlcpy')
 # wait4, waitid, etc, are optional (HPUX, et al)
 have_func('wait4')
 have_func('waitid')
+have_func('sigset')
 have_func('sigsend')
 have_func('getrusage')
 have_func('getdtablesize')
@@ -64,7 +65,20 @@ have_struct_member('struct siginfo', 'si_stime', 'signal.h')
 
 have_const('P_CID', 'signal.h')
 have_const('P_GID', 'signal.h')
-have_const('P_MYID', 'signal.h')
+have_const('P_MYID', 'signal.hclass PasswdStruct < FFI::Struct
+      layout(
+        :pw_name, :string,
+        :pw_passwd, :string,
+        :pw_uid, :uint,
+        :pw_gid, :uint,
+        :pw_change, :ulong,
+        :pw_class, :string,
+        :pw_gecos, :string,
+        :pw_dir, :string,
+        :pw_shell, :string,
+        :pw_expire, :ulong
+      )
+    end')
 have_const('P_SID', 'signal.h')
 have_const('P_UID', 'signal.h')
 
