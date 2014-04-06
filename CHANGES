@@ -4,6 +4,7 @@
   then use the $last_status global instead, or just use the return value. This
   was changed thanks to an issue pointed out by Michael Lee Squires where
   subsequent system calls no longer set $? properly.
+* Some build warning fixes for BSD platforms.
 
 == 1.6.0 - 28-Aug-2011
 * Removed the getrlimit and setrlimit methods. Ruby has supported these methods
