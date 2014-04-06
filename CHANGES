@@ -1,10 +1,11 @@
-== 1.7.0 - ???
+== 1.7.0 - 6-Apr-2014
 * The wait3 and wait4 methods no longer set $? to a custom struct. The builtin
   variable is still set, but if you need the custom Struct::ProcStat information
   then use the $last_status global instead, or just use the return value. This
   was changed thanks to an issue pointed out by Michael Lee Squires where
   subsequent system calls no longer set $? properly.
 * Some build warning fixes for BSD platforms.
+* Some test updates for BSD and Solaris.
 
 == 1.6.0 - 28-Aug-2011
 * Removed the getrlimit and setrlimit methods. Ruby has supported these methods
