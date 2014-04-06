@@ -65,10 +65,10 @@ static VALUE pst_wifstopped(int status)
  */
 static VALUE pst_wifsignaled(int status)
 {
-   if (WIFSIGNALED(status))
-	   return Qtrue;
-   else
-      return Qfalse;
+  if (WIFSIGNALED(status))
+	  return Qtrue;
+  else
+    return Qfalse;
 }
 
 /*
@@ -77,10 +77,10 @@ static VALUE pst_wifsignaled(int status)
  */
 static VALUE pst_wifexited(int status)
 {
-   if (WIFEXITED(status))
-      return Qtrue;
-   else
-      return Qfalse;
+  if (WIFEXITED(status))
+    return Qtrue;
+  else
+    return Qfalse;
 }
 
 /*
@@ -89,9 +89,10 @@ static VALUE pst_wifexited(int status)
  */
 static VALUE pst_success_p(int status)
 {
-   if (!WIFEXITED(status))
-      return Qnil;
-   return WEXITSTATUS(status) == EXIT_SUCCESS ? Qtrue : Qfalse;
+  if (!WIFEXITED(status))
+    return Qnil;
+
+  return WEXITSTATUS(status) == EXIT_SUCCESS ? Qtrue : Qfalse;
 }
 
 /*
@@ -101,12 +102,12 @@ static VALUE pst_success_p(int status)
 static VALUE pst_wcoredump(int status)
 {
 #ifdef WCOREDUMP
-   if (WCOREDUMP(status))
-      return Qtrue;
-   else
-      return Qfalse;
+  if (WCOREDUMP(status))
+    return Qtrue;
+  else
+    return Qfalse;
 #else
-   return Qfalse;
+  return Qfalse;
 #endif
 }
 
@@ -116,9 +117,10 @@ static VALUE pst_wcoredump(int status)
  */
 static VALUE pst_wexitstatus(int status)
 {
-   if (WIFEXITED(status))
-      return INT2NUM(WEXITSTATUS(status));
-   return Qnil;
+  if (WIFEXITED(status))
+    return INT2NUM(WEXITSTATUS(status));
+
+  return Qnil;
 }
 
 /*
@@ -127,9 +129,10 @@ static VALUE pst_wexitstatus(int status)
  */
 static VALUE pst_wtermsig(int status)
 {
-   if (WIFSIGNALED(status))
-      return INT2NUM(WTERMSIG(status));
-   return Qnil;
+  if (WIFSIGNALED(status))
+    return INT2NUM(WTERMSIG(status));
+
+  return Qnil;
 }
 
 /*
@@ -138,9 +141,10 @@ static VALUE pst_wtermsig(int status)
  */
 static VALUE pst_wstopsig(int status)
 {
-   if(WIFSTOPPED(status))
-      return INT2NUM(WSTOPSIG(status));
-   return Qnil;
+  if(WIFSTOPPED(status))
+    return INT2NUM(WSTOPSIG(status));
+
+  return Qnil;
 }
 
 /*
@@ -200,6 +204,10 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
          pst_wtermsig(status),
          pst_wstopsig(status)
       );
+
+      rb_last_status_set(status, pid);
+      OBJ_FREEZE(v_last_status);
+
       return v_last_status;
    }
    else{
@@ -268,6 +276,10 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
          pst_wtermsig(status),
          pst_wstopsig(status)
       );
+
+      rb_last_status_set(status, pid);
+      OBJ_FREEZE(v_last_status);
+
       return v_last_status;
    }
    else{
@@ -670,36 +682,36 @@ static void sigproc(int signum){ /* Do nothing */ }
  *      Any non-system process whose effective user ID is equal to +id+.
  */
 static VALUE proc_sigsend(int argc, VALUE* argv, VALUE mod){
-   VALUE v_type, v_pid, v_signal;
-   idtype_t idtype;
-   id_t id;
-   int sig = 0; /* 0 is our default signal (i.e. no signal) */
+  VALUE v_type, v_pid, v_signal;
+  idtype_t idtype;
+  id_t id;
+  int sig = 0; /* 0 is our default signal (i.e. no signal) */
 
-   rb_scan_args(argc, argv, "21", &v_type, &v_pid, &v_signal);
+  rb_scan_args(argc, argv, "21", &v_type, &v_pid, &v_signal);
 
-   idtype = NUM2INT(v_type);
-   id = NUM2INT(v_pid);
+  idtype = NUM2INT(v_type);
+  id = NUM2INT(v_pid);
 
-   if(!NIL_P(v_signal)){
-      if(TYPE(v_signal) == T_FIXNUM){
-         sig = FIX2INT(v_signal);
-      }
-      else{
-         char signame[SIG2STR_MAX];
-         unsigned int max = SIG2STR_MAX;
+  if(!NIL_P(v_signal)){
+    if(TYPE(v_signal) == T_FIXNUM){
+      sig = FIX2INT(v_signal);
+    }
+    else{
+      char signame[SIG2STR_MAX];
+      unsigned int max = SIG2STR_MAX;
 
-         if(strlcpy(signame, StringValuePtr(v_signal), max) >= max)
-            rb_raise(rb_eArgError, "string too large");
+      if(strlcpy(signame, StringValuePtr(v_signal), max) >= max)
+        rb_raise(rb_eArgError, "string too large");
 
-         if(str2sig(signame,&sig) != 0)
-            rb_sys_fail("str2sig");
-      }
-   }
+      if(str2sig(signame,&sig) != 0)
+        rb_sys_fail("str2sig");
+    }
+  }
 
-   if(sigsend(idtype,id,sig) != 0)
-      rb_sys_fail("sigsend");
+  if(sigsend(idtype,id,sig) != 0)
+    rb_sys_fail("sigsend");
 
-   return Qnil;
+  return Qnil;
 }
 #endif
 
@@ -709,8 +721,8 @@ static VALUE proc_sigsend(int argc, VALUE* argv, VALUE mod){
  *    Process.getrusage(children=false)
  *
  * Returns comprehensive process resource usage information in the form of a
- * RUsage struct.  By default, this will return information for the current
- * process.  If +children+ is set to true, it will return information for
+ * RUsage struct. By default, this will return information for the current
+ * process. If +children+ is set to true, it will return information for
  * terminated and waited for children of the current process.
  *
  * The RUsage struct contains the following members:
@@ -735,36 +747,36 @@ static VALUE proc_sigsend(int argc, VALUE* argv, VALUE mod){
  * Note that not all members contain meaningful values on all platforms.
  */
 static VALUE proc_getrusage(int argc, VALUE* argv, VALUE mod){
-   VALUE v_children = Qfalse;
-   struct rusage r;
-   int who = RUSAGE_SELF;
+  VALUE v_children = Qfalse;
+  struct rusage r;
+  int who = RUSAGE_SELF;
 
-   rb_scan_args(argc, argv, "01", &v_children);
+  rb_scan_args(argc, argv, "01", &v_children);
 
-   if(RTEST(v_children))
-      who = RUSAGE_CHILDREN;
+  if(RTEST(v_children))
+    who = RUSAGE_CHILDREN;
 
-   if(getrusage(who,&r) == -1)
-      rb_sys_fail("getrusage");
+  if(getrusage(who,&r) == -1)
+    rb_sys_fail("getrusage");
 
-   return rb_struct_new(v_usage_struct,
-      rb_float_new((double)r.ru_utime.tv_sec+(double)r.ru_utime.tv_usec/1e6),
-      rb_float_new((double)r.ru_stime.tv_sec+(double)r.ru_stime.tv_usec/1e6),
-      LONG2NUM(r.ru_maxrss),
-      LONG2NUM(r.ru_ixrss),
-      LONG2NUM(r.ru_idrss),
-      LONG2NUM(r.ru_isrss),
-      LONG2NUM(r.ru_minflt),
-      LONG2NUM(r.ru_majflt),
-      LONG2NUM(r.ru_nswap),
-      LONG2NUM(r.ru_inblock),
-      LONG2NUM(r.ru_oublock),
-      LONG2NUM(r.ru_msgsnd),
-      LONG2NUM(r.ru_msgrcv),
-      LONG2NUM(r.ru_nsignals),
-      LONG2NUM(r.ru_nvcsw),
-      LONG2NUM(r.ru_nivcsw)
-   );
+  return rb_struct_new(v_usage_struct,
+    rb_float_new((double)r.ru_utime.tv_sec+(double)r.ru_utime.tv_usec/1e6),
+    rb_float_new((double)r.ru_stime.tv_sec+(double)r.ru_stime.tv_usec/1e6),
+    LONG2NUM(r.ru_maxrss),
+    LONG2NUM(r.ru_ixrss),
+    LONG2NUM(r.ru_idrss),
+    LONG2NUM(r.ru_isrss),
+    LONG2NUM(r.ru_minflt),
+    LONG2NUM(r.ru_majflt),
+    LONG2NUM(r.ru_nswap),
+    LONG2NUM(r.ru_inblock),
+    LONG2NUM(r.ru_oublock),
+    LONG2NUM(r.ru_msgsnd),
+    LONG2NUM(r.ru_msgrcv),
+    LONG2NUM(r.ru_nsignals),
+    LONG2NUM(r.ru_nvcsw),
+    LONG2NUM(r.ru_nivcsw)
+  );
 }
 #endif
 
@@ -778,7 +790,7 @@ static VALUE proc_getrusage(int argc, VALUE* argv, VALUE mod){
  * as the resource identifier.
 */
 static VALUE proc_getdtablesize(VALUE mod){
-   return INT2FIX(getdtablesize());
+  return INT2FIX(getdtablesize());
 }
 #endif
 
@@ -949,9 +961,9 @@ void Init_wait3()
   rb_define_const(rb_mProcess, "P_PROJID", INT2FIX(P_PROJID));
 #endif
 
-  /* 1.6.0: The version of the proc-wait3 library */
-  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_new2("1.6.0"));
+  /* 1.7.0: The version of the proc-wait3 library */
+  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_new2("1.7.0"));
 
   /* Define this last in our Init_wait3 function */
-  rb_define_readonly_variable("$?", &v_last_status);
+  rb_define_readonly_variable("$last_status", &v_last_status);
 }
