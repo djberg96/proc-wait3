@@ -194,7 +194,7 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
     assert_not_nil(Process::P_ALL)
     assert_not_nil(Process::P_CID)
     assert_not_nil(Process::P_GID)
-    assert_not_nil(Process::P_MYID)
+    assert_not_nil(Process::P_MYID) unless @@solaris
     assert_not_nil(Process::P_PGID)
     assert_not_nil(Process::P_PID)
     assert_not_nil(Process::P_SID)
