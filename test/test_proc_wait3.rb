@@ -33,7 +33,7 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   end
 
   test "version constant is set to expected value" do
-    assert_equal('1.6.1', Process::WAIT3_VERSION)
+    assert_equal('1.7.0', Process::WAIT3_VERSION)
   end
 
   test "wait3 method is defined" do
@@ -41,19 +41,38 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   end
 
   test "wait3 works as expected" do
-    fork{ sleep 1 }
+    fork{ sleep 0.5 }
     assert_nothing_raised{ Process.wait3 }
   end
 
   test "wait3 returns the expected proc status membes" do
-    fork{ sleep 1 }
+    fork{ sleep 0.5 }
     assert_nothing_raised{ @proc_stat = Process.wait3 }
     assert_equal(@proc_stat_members, @proc_stat.members)
   end
 
   test "wait3 with WNOHANG works as expected" do
-    fork{ sleep 1 }
+    fork{ sleep 0.5 }
     assert_nothing_raised{ Process.wait3(Process::WNOHANG) }
+  end
+
+  test "wait3 sets and returns $last_status to expected values" do
+    fork{ sleep 0.5 }
+    Process.wait3
+    assert_kind_of(Struct::ProcStat, $last_status)
+    assert_not_nil($last_status)
+  end
+
+  test "wait3 sets pid and status members of $?" do
+    fork{ sleep 0.5 }
+    Process.wait3
+    assert_not_nil($?)
+  end
+
+  test "wait3 returns frozen struct" do
+    fork{ sleep 0.5 }
+    struct = Process.wait3
+    assert_true(struct.frozen?)
   end
 
   test "getdtablesize works as expected" do
@@ -76,9 +95,28 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   test "wait4 works as expected" do
     omit_if(@@hpux, 'wait4 test skipped on this platform')
 
-    pid = fork{ sleep 1 }
+    pid = fork{ sleep 0.5 }
     assert_nothing_raised{ @proc_stat = Process.wait4(pid) }
     assert_kind_of(Struct::ProcStat, @proc_stat)
+  end
+
+  test "wait4 sets and returns $last_status to expected values" do
+    pid = fork{ sleep 0.5 }
+    Process.wait4(pid)
+    assert_kind_of(Struct::ProcStat, $last_status)
+    assert_not_nil($last_status)
+  end
+
+  test "wait4 sets pid and status members of $?" do
+    pid = fork{ sleep 0.5 }
+    Process.wait4(pid)
+    assert_not_nil($?)
+  end
+
+  test "wait4 returns frozen struct" do
+    pid = fork{ sleep 0.5 }
+    struct = Process.wait4(pid)
+    assert_true(struct.frozen?)
   end
 
   test "waitid method is defined" do
@@ -88,20 +126,20 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
 
   test "waitid method works as expected" do
     omit_if(@@hpux || @@darwin || @@freebsd, 'waitid test skipped on this platform')
-    pid = fork{ sleep 1 }
+    pid = fork{ sleep 0.5 }
     assert_nothing_raised{ Process.waitid(Process::P_PID, pid, Process::WEXITED) }
   end
 
   test "waitid method raises expected errors if wrong argument type is passed" do
     omit_if(@@hpux || @@darwin || @@freebsd, 'waitid test skipped on this platform')
-    pid = fork{ sleep 1 }
+    pid = fork{ sleep 0.5 }
     assert_raises(TypeError){ Process.waitid("foo", pid, Process::WEXITED) }
     assert_raises(TypeError){ Process.waitid(Process::P_PID, pid, "foo") }
     assert_raises(TypeError){ Process.waitid(Process::P_PID, "foo", Process::WEXITED) }
   end
 
   test "waitid method raises expected error if invalid argument is passed" do
-    fork{ sleep 1 }
+    fork{ sleep 0.5 }
     assert_raises(Errno::ECHILD, Errno::EINVAL){ Process.waitid(Process::P_PID, 99999999, Process::WEXITED) }
   end
 
@@ -112,7 +150,7 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
 
   test "sigsend works as expected" do
     omit_unless(@@solaris, 'sigsend test skipped on this platform')
-    pid = fork{ sleep 1 }
+    pid = fork{ sleep 0.5 }
     assert_nothing_raised{ Process.sigsend(Process::P_PID, pid, 0) }
   end
 
@@ -121,13 +159,13 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   end
 
   test "getrusage works as expected" do
-    fork{ sleep 1 }
+    fork{ sleep 0.5 }
     assert_nothing_raised{ Process.getrusage }
     assert_nothing_raised{ Process.getrusage(true) }
   end
 
   test "getrusage returns the expected struct" do
-    fork{ sleep 1 }
+    fork{ sleep 0.5 }
     assert_kind_of(Struct::RUsage, Process.getrusage)
     assert_kind_of(Float, Process.getrusage.stime)
     assert_kind_of(Float, Process.getrusage.utime)
