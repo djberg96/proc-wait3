@@ -2,6 +2,11 @@
 #include <string.h>
 #include <unistd.h>
 
+/* Debian */
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
 #ifdef HAVE_WAIT_H
 #include <wait.h>
 #else
