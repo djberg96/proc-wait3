@@ -966,8 +966,8 @@ void Init_wait3()
   rb_define_const(rb_mProcess, "P_PROJID", INT2FIX(P_PROJID));
 #endif
 
-  /* 1.7.0: The version of the proc-wait3 library */
-  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_new2("1.7.0"));
+  /* 1.7.1: The version of the proc-wait3 library */
+  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_new2("1.7.1"));
 
   /* Define this last in our Init_wait3 function */
   rb_define_readonly_variable("$last_status", &v_last_status);
