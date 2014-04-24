@@ -1,3 +1,7 @@
+== 1.7.1 - 24-Apr-2014
+* Explicitly check for and include sys/resource.h because Debian. Thanks
+  go to Christos Trochalakis for the spot.
+
 == 1.7.0 - 6-Apr-2014
 * The wait3 and wait4 methods no longer set $? to a custom struct. The builtin
   variable is still set, but if you need the custom Struct::ProcStat information
