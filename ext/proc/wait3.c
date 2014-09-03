@@ -968,7 +968,7 @@ void Init_wait3()
   rb_define_const(rb_mProcess, "P_PROJID", INT2FIX(P_PROJID));
 #endif
 
-#ifdef HAVE_GETRUSAGE
+#ifdef HAVE_CONST_RUSAGE_THREAD
   rb_define_const(rb_mProcess, "RUSAGE_THREAD", INT2FIX(RUSAGE_THREAD));
 #endif
 
