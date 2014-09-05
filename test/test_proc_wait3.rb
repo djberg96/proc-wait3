@@ -33,7 +33,7 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   end
 
   test "version constant is set to expected value" do
-    assert_equal('1.7.1', Process::WAIT3_VERSION)
+    assert_equal('1.7.2', Process::WAIT3_VERSION)
   end
 
   test "wait3 method is defined" do
@@ -163,6 +163,11 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
     fork{ sleep 0.5 }
     assert_nothing_raised{ Process.getrusage }
     assert_nothing_raised{ Process.getrusage(true) }
+  end
+
+  test "getrusage can get thread info on Linux" do
+    omit_unless(@@linux)
+    assert_nothing_raised{ Process.getrusage(Process::RUSAGE_THREAD) }
   end
 
   test "getrusage returns the expected struct" do
