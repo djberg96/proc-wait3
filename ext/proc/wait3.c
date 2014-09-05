@@ -730,6 +730,9 @@ static VALUE proc_sigsend(int argc, VALUE* argv, VALUE mod){
  * process. If +children+ is set to true, it will return information for
  * terminated and waited for children of the current process.
  *
+ * On Linux platforms the +children+ argument can be set to RUSAGE_THREAD to
+ * retrieve thread information instead.
+ *
  * The RUsage struct contains the following members:
  *
  * * utime     - User time
