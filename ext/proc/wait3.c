@@ -758,7 +758,9 @@ static VALUE proc_getrusage(int argc, VALUE* argv, VALUE mod){
 
   rb_scan_args(argc, argv, "01", &v_children);
 
-  if(RTEST(v_children))
+  if(TYPE(v_children) == T_FIXNUM)
+    who = FIX2INT(v_children);
+  else if(RTEST(v_children))
     who = RUSAGE_CHILDREN;
 
   if(getrusage(who,&r) == -1)
@@ -964,6 +966,10 @@ void Init_wait3()
 #ifdef HAVE_CONST_P_PROJID
   /* Process project ID */
   rb_define_const(rb_mProcess, "P_PROJID", INT2FIX(P_PROJID));
+#endif
+
+#ifdef HAVE_CONST_RUSAGE_THREAD
+  rb_define_const(rb_mProcess, "RUSAGE_THREAD", INT2FIX(RUSAGE_THREAD));
 #endif
 
   /* 1.7.1: The version of the proc-wait3 library */

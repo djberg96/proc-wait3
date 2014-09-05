@@ -92,4 +92,7 @@ have_const('P_PID', 'signal.h') || have_const('P_PID', 'sys/wait.h')
 have_const('P_PROJID', 'signal.h')
 have_const('P_TASKID', 'signal.h')
 
+# RUSAGE_THREAD is Linux-specific
+have_const('RUSAGE_THREAD', 'sys/resource.h')
+
 create_makefile('proc/wait3', 'proc')
