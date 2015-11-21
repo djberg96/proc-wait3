@@ -33,7 +33,7 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   end
 
   test "version constant is set to expected value" do
-    assert_equal('1.7.2', Process::WAIT3_VERSION)
+    assert_equal('1.7.3', Process::WAIT3_VERSION)
   end
 
   test "wait3 method is defined" do
