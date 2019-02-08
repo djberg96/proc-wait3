@@ -1,3 +1,12 @@
+== 1.8.0 - ???
+* Changed license to Apache-2.0.
+* Now requires Ruby 2.2 or later.
+* Now checks for <bsd/string.h> header and include's it if found. This was
+  mainly to help silence some implicit declaration warnings on Linux.
+* The WAIT3_VERSION constant is now frozen.
+* Updated the cert, should be good for about 10 years.
+* Added metadata to the gemspec.
+
 == 1.7.3 - 21-Nov-2015
 * Fixed a bug where tv_usec was divided by 1k instead of 1e6. Thanks go to
   Jason Gladish for the spot.
