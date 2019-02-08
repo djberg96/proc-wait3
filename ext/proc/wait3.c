@@ -26,31 +26,6 @@
 #define SIG2STR_MAX 32
 #endif
 
-/* Ruby 1.9.x */
-#ifndef RSTRING_PTR
-#define RSTRING_PTR(v) (RSTRING(v)->ptr)
-#define RSTRING_LEN(v) (RSTRING(v)->len)
-#endif
-
-#ifndef RARRAY_PTR
-#define RARRAY_PTR(v) (RARRAY(v)->ptr)
-#define RARRAY_LEN(v) (RARRAY(v)->len)
-#endif
-
-/* Copied from process.c in Ruby 1.8.5 */
-#ifndef RUBY_HAS_RLIMIT
-#if SIZEOF_RLIM_T == SIZEOF_INT
-# define RLIM2NUM(v) UINT2NUM(v)
-# define NUM2RLIM(v) NUM2UINT(v)
-#elif SIZEOF_RLIM_T == SIZEOF_LONG
-# define RLIM2NUM(v) ULONG2NUM(v)
-# define NUM2RLIM(v) NUM2ULONG(v)
-#elif SIZEOF_RLIM_T == SIZEOF_LONG_LONG
-# define RLIM2NUM(v) ULL2NUM(v)
-# define NUM2RLIM(v) NUM2ULL(v)
-#endif
-#endif
-
 VALUE v_last_status;
 VALUE v_procstat_struct, v_siginfo_struct, v_usage_struct;
 
