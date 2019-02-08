@@ -27,13 +27,12 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
       "termsig", "stopsig"
     ]
 
-    if RUBY_VERSION.to_f >= 1.9
-      @proc_stat_members = @proc_stat_members.map{ |e| e.to_sym }
-    end
+    @proc_stat_members = @proc_stat_members.map{ |e| e.to_sym }
   end
 
   test "version constant is set to expected value" do
-    assert_equal('1.7.3', Process::WAIT3_VERSION)
+    assert_equal('1.8.0', Process::WAIT3_VERSION)
+    assert_true(Process::WAIT3_VERSION.frozen?)
   end
 
   test "wait3 method is defined" do
