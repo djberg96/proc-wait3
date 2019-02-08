@@ -42,6 +42,7 @@ end
 # Yay, Linux
 have_func('str2sig')
 have_func('strlcpy')
+have_header('bsd/string.h')
 
 # wait4, waitid, etc, are optional (HPUX, et al)
 have_func('wait4')
