@@ -6,29 +6,6 @@ require 'mkmf'
 
 dir_config('proc-wait3')
 
-# We need this for older versions of Ruby.
-def have_const(const, header = nil, opt = "", &b)
-  checking_for const do
-    header = cpp_include(header)
-    if try_compile(<<"SRC", opt, &b)
-#{COMMON_HEADERS}
-#{header}
-/* top */
-static int t = #{const};
-SRC
-     $defs.push(
-        format(
-          "-DHAVE_CONST_%s",
-          const.strip.upcase.tr_s("^A-Z0-9_", "_")
-        )
-      )
-      true
-    else
-      false
-    end
-  end
-end
-
 have_header('wait.h')
 have_header('sys/resource.h')
 have_header('sys/wait.h')
