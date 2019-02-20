@@ -7,6 +7,7 @@
 * Updated the cert, should be good for about 10 years.
 * Added metadata to the gemspec.
 * Removed some old macro checks/definitions that were no longer relevant.
+* Added a proc-wait3.rb file for convenience.
 
 == 1.7.3 - 21-Nov-2015
 * Fixed a bug where tv_usec was divided by 1k instead of 1e6. Thanks go to
