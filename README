@@ -27,6 +27,10 @@
   Linux users who compile with gcc -Wall will notice a few warnings. These
   are harmless (and unavoidable atm).
 
+  Linux users may also notice warnings about implicit declarations. These
+  are also harmless, and can be silenced by installing the libbsd-dev package
+  first.
+
 = Integration with Ruby's process.c
 
   I considered simply providing a patch to the core process.c file, but I
