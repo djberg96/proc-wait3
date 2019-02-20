@@ -1,4 +1,4 @@
-== 1.8.0 - ???
+== 1.8.0 - 20-Feb-2019
 * Changed license to Apache-2.0.
 * Now requires Ruby 2.2 or later.
 * Now checks for <bsd/string.h> header and include's it if found. This was
