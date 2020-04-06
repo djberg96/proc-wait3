@@ -1,8 +1,8 @@
-CHANGES
+CHANGES.rdoc
 LICENSE
-MANIFEST
+MANIFEST.rdoc
 Rakefile
-README
+README.rdoc
 proc-wait3.gemspec
 certs/djberg96_pub.pem
 doc/wait3.txt
