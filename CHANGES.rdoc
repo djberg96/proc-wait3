@@ -1,4 +1,4 @@
-== 1.8.1 - ???
+== 1.8.1 - 8-Apr-2020
 * Added a LICENSE file to the distribution as required by the Apache-2.0 license.
 * Add an explicit .rdoc extension to the README, CHANGES and MANIFEST files.
 
