@@ -31,7 +31,7 @@ class TC_Proc_Wait3 < Test::Unit::TestCase
   end
 
   test "version constant is set to expected value" do
-    assert_equal('1.8.0', Process::WAIT3_VERSION)
+    assert_equal('1.8.1', Process::WAIT3_VERSION)
     assert_true(Process::WAIT3_VERSION.frozen?)
   end
 
