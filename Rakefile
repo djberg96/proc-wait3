@@ -1,19 +1,21 @@
 require 'rake'
 require 'rake/clean'
-require 'rake/testtask'
+require 'rspec/core/rake_task'
 require 'fileutils'
 require 'rbconfig'
 include RbConfig
 
 CLEAN.include(
-  '**/*.gem',               # Gem files
-  '**/*.rbc',               # Rubinius
-  '**/*.o',                 # C object file
-  '**/*.log',               # Ruby extension build log
-  '**/Makefile',            # C Makefile
-  '**/conftest.dSYM',       # OS X build directory
-  "**/*.#{CONFIG['DLEXT']}" # C shared object
+  '**/*.gem',                # Gem files
+  '**/*.rbc',                # Rubinius
+  '**/*.o',                  # C object file
+  '**/*.log',                # Ruby extension build log
+  '**/Makefile',             # C Makefile
+  '**/conftest.dSYM',        # OS X build directory
+  "**/*.#{CONFIG['DLEXT']}", # C shared object
+  '**/*.lock'                # Bundler
 )
+
 
 desc "Build the source (but don't install it)"
 task :build => [:clean] do |t|
@@ -30,7 +32,7 @@ namespace :gem do
     require 'rubygems/package'
     spec = eval(IO.read('proc-wait3.gemspec'))
     spec.signing_key = File.join(Dir.home, '.ssh', 'gem-private_key.pem')
-    Gem::Package.build(spec, true)
+    Gem::Package.build(spec)
   end
 
   desc "Install the proc-wait3 gem"
@@ -67,11 +69,9 @@ namespace :example do
   end
 end
 
-Rake::TestTask.new do |t|
-  task :test => [:build]
-  t.libs << 'ext'
-  t.warning = true
-  t.verbose = true
+desc "Run the test suite"
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.rspec_opts = '-Iext'
 end
 
-task :default => :test
+task :default => [:build, :spec]
