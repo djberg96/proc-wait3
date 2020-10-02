@@ -13,7 +13,7 @@ CLEAN.include(
   '**/Makefile',             # C Makefile
   '**/conftest.dSYM',        # OS X build directory
   "**/*.#{CONFIG['DLEXT']}", # C shared object
-  '**/.lock'                 # Bundler
+  '**/*.lock'                # Bundler
 )
 
 
