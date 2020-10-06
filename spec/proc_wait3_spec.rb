@@ -37,11 +37,13 @@ RSpec.describe Process do
   end
 
   example "wait3 works as expected" do
+    skip 'wait3 test skipped on this platform' if darwin
     fork{ sleep 0.5 }
     expect{ Process.wait3 }.not_to raise_error
   end
 
   example "wait3 returns the expected proc status members" do
+    skip 'wait3 test skipped on this platform' if darwin
     fork{ sleep 0.5 }
     expect{ @proc_stat = Process.wait3 }.not_to raise_error
     expect( @proc_stat.members).to eq(proc_stat_members)
@@ -53,6 +55,7 @@ RSpec.describe Process do
   end
 
   example "wait3 sets and returns $last_status to expected values" do
+    skip 'wait3 test skipped on this platform' if darwin
     fork{ sleep 0.5 }
     Process.wait3
     expect($last_status).to be_kind_of(Struct::ProcStat)
@@ -60,12 +63,14 @@ RSpec.describe Process do
   end
 
   example "wait3 sets pid and status members of $?" do
+    skip 'wait3 test skipped on this platform' if darwin
     fork{ sleep 0.5 }
     Process.wait3
     expect($?).not_to be_nil
   end
 
   example "wait3 returns frozen struct" do
+    skip 'wait3 test skipped on this platform' if darwin
     fork{ sleep 0.5 }
     struct = Process.wait3
     expect(struct).to be_frozen
@@ -90,7 +95,7 @@ RSpec.describe Process do
   end
 
   example "wait4 works as expected" do
-    skip 'wait4 test skipped on this platform' if hpux
+    skip 'wait4 test skipped on this platform' if hpux || darwin
 
     pid = fork{ sleep 0.5 }
     expect{ @proc_stat = Process.wait4(pid) }.not_to raise_error
@@ -98,7 +103,7 @@ RSpec.describe Process do
   end
 
   example "wait4 sets and returns $last_status to expected values" do
-    skip 'wait4 test skipped on this platform' if hpux
+    skip 'wait4 test skipped on this platform' if hpux || darwin
 
     pid = fork{ sleep 0.5 }
     Process.wait4(pid)
@@ -107,7 +112,7 @@ RSpec.describe Process do
   end
 
   example "wait4 sets pid and status members of $?" do
-    skip 'wait4 test skipped on this platform' if hpux
+    skip 'wait4 test skipped on this platform' if hpux || darwin
 
     pid = fork{ sleep 0.5 }
     Process.wait4(pid)
@@ -115,7 +120,7 @@ RSpec.describe Process do
   end
 
   example "wait4 returns frozen struct" do
-    skip 'wait4 test skipped on this platform' if hpux
+    skip 'wait4 test skipped on this platform' if hpux || darwin
 
     pid = fork{ sleep 0.5 }
     struct = Process.wait4(pid)
