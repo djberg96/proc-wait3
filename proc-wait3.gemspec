@@ -13,12 +13,8 @@ Gem::Specification.new do |spec|
   spec.files      = Dir['**/*'].reject{ |f| f.include?('git') }
   spec.cert_chain = Dir['certs/*']
 
-  spec.extra_rdoc_files  = ['CHANGES.rdoc', 'README.rdoc', 'MANIFEST.rdoc', 'ext/proc/wait3.c']
-
   spec.add_development_dependency('rake')
   spec.add_development_dependency('rspec', '~> 3.9')
-
-  spec.required_ruby_version = '>= 2.2'
 
   spec.metadata = {
     'homepage_uri'      => 'https://github.com/djberg96/proc-wait3',
