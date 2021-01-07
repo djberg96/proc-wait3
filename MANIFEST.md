@@ -1,8 +1,9 @@
-* CHANGES.rdoc
+* CHANGES.md
+* Gemfile
 * LICENSE
-* MANIFEST.rdoc
+* MANIFEST.md
 * Rakefile
-* README.rdoc
+* README.md
 * proc-wait3.gemspec
 * certs/djberg96_pub.pem
 * doc/wait3.txt

@@ -1,28 +1,30 @@
-= Description
+## Description
 Adds the wait3, wait4, waitid, pause, sigsend, and getrusage methods to the Process module.
 
-= Installation
-  gem install proc-wait3
+## Installation
+`gem install proc-wait3`
 
-= Synopsis
-  require 'proc/wait3'
+## Synopsis
+```ruby
+require 'proc/wait3'
 
-  pid = fork{
-    sleep 1
-    exit 2
-  }
+pid = fork{
+  sleep 1
+  exit 2
+}
 
-  puts Time.now.to_s
-  Process.wait3
-  puts $?.exitstatus # => 2
+puts Time.now.to_s
+Process.wait3
+puts $?.exitstatus # => 2
+```
 
-= Tested Platforms
-  * Solaris
-  * Linux
-  * FreeBSD
-  * OS X
+## Tested Platforms
+* Solaris
+* Linux
+* FreeBSD
+* OS X
 
-= Warnings
+## Warnings
 Linux users who compile with gcc -Wall will notice a few warnings. These
 are harmless (and unavoidable atm).
 
@@ -34,8 +36,7 @@ On Darwin these methods will likely fail with Errno::EINTR unless you pass
 the WNOHANG flag. I am not sure why, I can only speculate that the child is
 receiving a signal from either the Ruby interpreter or the operating system.
 
-= Integration with Ruby's process.c
-
+## Integration with Ruby's process.c
 I considered simply providing a patch to the core process.c file, but I
 decided against it for two reasons.  First, I wanted to get something
 out more quickly rather than waiting for approval from the core developers
@@ -48,6 +49,5 @@ The overloaded methods are also overkill, and do nothing but save me the
 trouble of typing the word "status", since all they're for is comparing or
 operating on the status attribute.
 
-= Additional Documentation
-
+## Additional Documentation
 Please see the doc/wait3.txt file for detailed documentation.
