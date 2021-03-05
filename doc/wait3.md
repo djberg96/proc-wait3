@@ -13,7 +13,7 @@ p $?
 ```
 
 ## Module Methods
-`Process.pause(signals=nil)`
+### `Process.pause(signals=nil)`
 
 Pauses the current process. If the process receives any of the signals
 you pass as arguments it will return from the pause and continue with
@@ -24,7 +24,7 @@ use 'INT', not 'SIGINT'.
 
 Returns the result of the underlying `pause()` function, which should always be -1.
    
-`Process.sigsend(idtype, id, signal=0)`
+### `Process.sigsend(idtype, id, signal=0)`
 
 Sends a signal of type "idtype" to a process or process group "id". This
 is more versatile method of sending signals to processes than Process.kill.
