@@ -32,7 +32,7 @@ is more versatile method of sending signals to processes than Process.kill.
 For a list of valid idtype values, see the "Process type constants" below.
 Not supported on all platforms.
    
-`Proc.wait3(flags=0)`
+### `Proc.wait3(flags=0)`
 
 Delays its caller until a signal is received or one of its child processes
 terminates or stops due to tracing.
@@ -41,13 +41,13 @@ The return value is a ProcStat structure and sets the `$last_status` global
 variable. The special global $? is also set. Raises a SystemError if there
 are no child processes.
 
-`Proc.wait4(pid, flags=0)`
+### `Proc.wait4(pid, flags=0)`
 
 Waits for the given child process to exit. Returns a ProcStat structure.
 The `$last_status` global variable is set. Also sets the `$?` special global
 variable.
    
-`Proc.waitid(id_type, id_num=nil, options=nil)`
+### `Proc.waitid(id_type, id_num=nil, options=nil)`
 
 Suspends the calling process until one of its children changes state,
 returning immediately if a child process changed state prior to the call.
