@@ -6,7 +6,7 @@
 * README.md
 * proc-wait3.gemspec
 * certs/djberg96_pub.pem
-* doc/wait3.txt
+* doc/wait3.md
 * ext/extconf.rb
 * ext/proc/wait3.c
 * examples/example_getrusage.rb

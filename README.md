@@ -50,4 +50,4 @@ trouble of typing the word "status", since all they're for is comparing or
 operating on the status attribute.
 
 ## Additional Documentation
-Please see the doc/wait3.txt file for detailed documentation.
+Please see the doc/wait3.md file for detailed documentation.
