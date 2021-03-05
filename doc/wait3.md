@@ -85,7 +85,7 @@ Not supported on all platforms.
 
 Returns the version of this package as a string.
 
-### Process type constants - all platforms
+## Process type constants - all platforms
 `Process::P_ALL`
 
 All non-system process.
@@ -98,7 +98,7 @@ A standard process id.
 
 Any non-system process group id.
 
-### Process type constants - not all platforms supported
+## Process type constants - not all platforms supported
 `Process::P_CID`
 
 A scheduler process id.
@@ -123,7 +123,7 @@ A task process id. Solaris 8 or later only.
 
 Any non-system effective process user id.
 
-### Additional Process constants - defined if waitid is defined on your system
+## Additional Process constants - defined if waitid is defined on your system
    
 Process::WCONTINUED
    Return the status for any child that was stopped and has been continued.
@@ -143,7 +143,7 @@ Process::WTRAPPED
 
    Not supported on all platforms.
    
-### RLIMIT constants
+## RLIMIT constants
 `Process::RLIMIT_AS`
 
 A synonym for `RLIMIT_VMEM`.
