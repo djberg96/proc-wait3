@@ -13,7 +13,7 @@ p $?
 ```
 
 ## Module Methods
-`Proc.pause(signals=nil)`
+`Process.pause(signals=nil)`
 
 Pauses the current process. If the process receives any of the signals
 you pass as arguments it will return from the pause and continue with
