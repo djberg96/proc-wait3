@@ -124,24 +124,28 @@ A task process id. Solaris 8 or later only.
 Any non-system effective process user id.
 
 ## Additional Process constants - defined if waitid is defined on your system
-   
-Process::WCONTINUED
-   Return the status for any child that was stopped and has been continued.
+`Process::WCONTINUED`
 
-Process::WEXITED
-   Wait for process(es) to exit.
+Return the status for any child that was stopped and has been continued.
 
-Process::WNOWAIT
-   Keep the process in a waitable state.
+`Process::WEXITED`
 
-Process::WSTOPPED
-   Wait for and return the process status of any child that has stopped upon
-   receipt of a signal.
+Wait for process(es) to exit.
 
-Process::WTRAPPED
-   Wait for traced process(es) to become trapped or reach a breakpoint.
+`Process::WNOWAIT`
 
-   Not supported on all platforms.
+Keep the process in a waitable state.
+
+`Process::WSTOPPED`
+
+Wait for and return the process status of any child that has stopped upon
+receipt of a signal.
+
+`Process::WTRAPPED`
+
+Wait for traced process(es) to become trapped or reach a breakpoint.
+
+Not supported on all platforms.
    
 ## RLIMIT constants
 `Process::RLIMIT_AS`
