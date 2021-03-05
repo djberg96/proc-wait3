@@ -194,7 +194,7 @@ Current soft limit.
 Current hard limit.
 
 ## Notes
-The `wait3` and `wait4` methods are similar to the wait2 and waitpid2
+The `wait3` and `wait4` methods are similar to the `wait2` and `waitpid2`
 methods, except that they return much more information via the rusage
 struct.
 
