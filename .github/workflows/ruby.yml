@@ -24,8 +24,9 @@ on:
 jobs:
   test:
     strategy:
-      ruby-version: ['2.6', '2.7']
-        platform: [ubuntu-latest, macos-latest]
+      matrix:
+        ruby-version: ['2.6', '2.7']
+          platform: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v2
