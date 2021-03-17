@@ -31,5 +31,6 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: false
+    - run: gem install rake
     - run: bundle config path vendor/bundle
     - run: bundle exec rake
