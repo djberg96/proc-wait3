@@ -25,12 +25,11 @@ jobs:
         ruby-version: ['2.6', '2.7']
         platform: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
-    env:
-      BUNDLE_GEMFILE: gemfiles/${{ matrix.gemfile }}.gemfile
     steps:
     - uses: actions/checkout@v2
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby-version }}
-        bundler-cache: true
+        bundler-cache: false
+    - run: bundle config path vendor/bundle
     - run: bundle exec rake
