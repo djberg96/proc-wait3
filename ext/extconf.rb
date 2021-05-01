@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ########################################################
 # Use the mkmf.rb file that I provide, so I can use the
 # have_enum_member method
@@ -12,7 +14,7 @@ have_header('sys/wait.h')
 
 # wait3 is mandatory.
 unless have_func('wait3')
-  STDERR.puts 'wait3() function not found'
+  warn 'wait3() function not found'
   exit
 end
 
