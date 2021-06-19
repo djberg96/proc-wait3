@@ -1,0 +1,5 @@
+*.lock
+Makefile
+*.log
+*.bundle
+*.o
