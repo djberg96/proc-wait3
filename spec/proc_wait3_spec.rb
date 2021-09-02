@@ -25,6 +25,7 @@ RSpec.describe Process do
 
   before do
     @proc_stat = nil
+    @pid = nil
   end
 
   example "version constant is set to expected value" do
@@ -38,25 +39,25 @@ RSpec.describe Process do
 
   example "wait3 works as expected" do
     skip 'wait3 test skipped on this platform' if darwin
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
     expect{ Process.wait3 }.not_to raise_error
   end
 
   example "wait3 returns the expected proc status members" do
     skip 'wait3 test skipped on this platform' if darwin
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
     expect{ @proc_stat = Process.wait3 }.not_to raise_error
     expect( @proc_stat.members).to eq(proc_stat_members)
   end
 
   example "wait3 with WNOHANG works as expected" do
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
     expect{ Process.wait3(Process::WNOHANG) }.not_to raise_error
   end
 
   example "wait3 sets and returns $last_status to expected values" do
     skip 'wait3 test skipped on this platform' if darwin
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
     Process.wait3
     expect($last_status).to be_kind_of(Struct::ProcStat)
     expect($last_status).not_to be_nil
@@ -64,14 +65,14 @@ RSpec.describe Process do
 
   example "wait3 sets pid and status members of $?" do
     skip 'wait3 test skipped on this platform' if darwin
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
     Process.wait3
     expect($?).not_to be_nil
   end
 
   example "wait3 returns frozen struct" do
     skip 'wait3 test skipped on this platform' if darwin
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
     struct = Process.wait3
     expect(struct).to be_frozen
   end
@@ -97,16 +98,16 @@ RSpec.describe Process do
   example "wait4 works as expected" do
     skip 'wait4 test skipped on this platform' if hpux || darwin
 
-    pid = fork{ sleep 0.5 }
-    expect{ @proc_stat = Process.wait4(pid) }.not_to raise_error
+    @pid = fork{ sleep 0.5 }
+    expect{ @proc_stat = Process.wait4(@pid) }.not_to raise_error
     expect(@proc_stat).to be_kind_of(Struct::ProcStat)
   end
 
   example "wait4 sets and returns $last_status to expected values" do
     skip 'wait4 test skipped on this platform' if hpux || darwin
 
-    pid = fork{ sleep 0.5 }
-    Process.wait4(pid)
+    @pid = fork{ sleep 0.5 }
+    Process.wait4(@pid)
     expect($last_status).to be_kind_of(Struct::ProcStat)
     expect($last_status).not_to be_nil
   end
@@ -114,16 +115,16 @@ RSpec.describe Process do
   example "wait4 sets pid and status members of $?" do
     skip 'wait4 test skipped on this platform' if hpux || darwin
 
-    pid = fork{ sleep 0.5 }
-    Process.wait4(pid)
+    @pid = fork{ sleep 0.5 }
+    Process.wait4(@pid)
     expect($?).not_to be_nil
   end
 
   example "wait4 returns frozen struct" do
     skip 'wait4 test skipped on this platform' if hpux || darwin
 
-    pid = fork{ sleep 0.5 }
-    struct = Process.wait4(pid)
+    @pid = fork{ sleep 0.5 }
+    struct = Process.wait4(@pid)
     expect(struct).to be_frozen
   end
 
@@ -136,23 +137,23 @@ RSpec.describe Process do
   example "waitid method works as expected" do
     skip 'waitid test skipped on this platform' if hpux || darwin || freebsd
 
-    pid = fork{ sleep 0.5 }
-    expect{ Process.waitid(Process::P_PID, pid, Process::WEXITED) }.not_to raise_error
+    @pid = fork{ sleep 0.5 }
+    expect{ Process.waitid(Process::P_PID, @pid, Process::WEXITED) }.not_to raise_error
   end
 
   example "waitid method raises expected errors if wrong argument type is passed" do
     skip 'waitid test skipped on this platform' if hpux || darwin || freebsd
 
-    pid = fork{ sleep 0.5 }
-    expect{ Process.waitid("foo", pid, Process::WEXITED) }.to raise_error(TypeError)
-    expect{ Process.waitid(Process::P_PID, pid, "foo") }.to raise_error(TypeError)
+    @pid = fork{ sleep 0.5 }
+    expect{ Process.waitid("foo", @pid, Process::WEXITED) }.to raise_error(TypeError)
+    expect{ Process.waitid(Process::P_PID, @pid, "foo") }.to raise_error(TypeError)
     expect{ Process.waitid(Process::P_PID, "foo", Process::WEXITED) }.to raise_error(TypeError)
   end
 
   example "waitid method raises expected error if invalid argument is passed" do
     skip 'waitid test skipped on this platform' if hpux || darwin || freebsd
 
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
     expect{ Process.waitid(Process::P_PID, 99999999, Process::WEXITED) }.to raise_error(Errno::ECHILD)
   end
 
@@ -165,8 +166,8 @@ RSpec.describe Process do
   example "sigsend works as expected" do
     skip 'sigsend test skipped on this platform' unless solaris
 
-    pid = fork{ sleep 0.5 }
-    expect{ Process.sigsend(Process::P_PID, pid, 0) }.not_to raise_error
+    @pid = fork{ sleep 0.5 }
+    expect{ Process.sigsend(Process::P_PID, @pid, 0) }.not_to raise_error
   end
 
   example "getrusage method is defined" do
@@ -174,7 +175,7 @@ RSpec.describe Process do
   end
 
   example "getrusage works as expected" do
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
 
     expect{ Process.getrusage }.not_to raise_error
     expect{ Process.getrusage(true) }.not_to raise_error
@@ -188,7 +189,7 @@ RSpec.describe Process do
   example "getrusage returns the expected struct" do
     skip 'getrusage only tested on Linux' unless linux
 
-    fork{ sleep 0.5 }
+    @pid = fork{ sleep 0.5 }
     expect(Process.getrusage).to be_kind_of(Struct::RUsage)
     expect(Process.getrusage.stime).to be_kind_of(Float)
     expect(Process.getrusage.utime).to be_kind_of(Float)
@@ -230,5 +231,9 @@ RSpec.describe Process do
 
     expect(Process::P_TASKID).not_to be_nil
     expect(Process::P_PROJID).not_to be_nil
+  end
+
+  def after
+    Process.kill(9, @pid) if @pid
   end
 end
