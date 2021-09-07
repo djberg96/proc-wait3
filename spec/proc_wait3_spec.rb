@@ -9,6 +9,8 @@ require 'rspec'
 require 'rbconfig'
 
 RSpec.describe Process do
+  Signal.trap('CHLD', 'IGNORE')
+
   let(:solaris) { RbConfig::CONFIG['host_os'] =~ /sunos|solaris/i }
   let(:darwin)  { RbConfig::CONFIG['host_os'] =~ /darwin|osx/i }
   let(:hpux)    { RbConfig::CONFIG['host_os'] =~ /hpux/i }
