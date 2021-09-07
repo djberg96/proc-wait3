@@ -34,9 +34,9 @@ Linux users may also notice warnings about implicit declarations. These
 are also harmless, and can be silenced by installing the libbsd-dev package
 first.
 
-On Darwin these methods will likely fail with Errno::EINTR unless you pass
-the WNOHANG flag. I am not sure why, I can only speculate that the child is
-receiving a signal from either the Ruby interpreter or the operating system.
+These methods may fail in conjunction with `fork` with `Errno::EINTR` unless
+you pass the WNOHANG flag, or explicitly ignore the `SIGCHLD` signal. Ruby's
+own `wait` methods appear to essentially be doing that behind the scenes.
 
 ## Integration with Ruby's process.c
 I considered simply providing a patch to the core process.c file, but I
