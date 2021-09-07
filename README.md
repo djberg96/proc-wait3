@@ -1,3 +1,5 @@
+[![Ruby](https://github.com/djberg96/proc-wait3/actions/workflows/ruby.yml/badge.svg)](https://github.com/djberg96/proc-wait3/actions/workflows/ruby.yml)
+
 ## Description
 Adds the wait3, wait4, waitid, pause, sigsend, and getrusage methods to the Process module.
 
