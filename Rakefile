@@ -1,6 +1,7 @@
 require 'rake'
 require 'rake/clean'
 require 'rspec/core/rake_task'
+require 'rubocop/rake_task'
 require 'fileutils'
 require 'rbconfig'
 include RbConfig
@@ -68,6 +69,8 @@ namespace :example do
     ruby '-Iext examples/example_waitid.rb'
   end
 end
+
+RuboCop::RakeTask.new
 
 desc "Run the test suite"
 RSpec::Core::RakeTask.new(:spec) do |t|
