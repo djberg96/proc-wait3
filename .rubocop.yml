@@ -12,6 +12,7 @@ RSpec/InstanceVariable:
 AllCops:
   NewCops: enable
   Exclude:
+    - examples/*.rb
     - proc-wait3.gemspec
     - Gemfile
     - Rakefile
