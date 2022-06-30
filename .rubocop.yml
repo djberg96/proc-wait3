@@ -23,6 +23,8 @@ Lint/EmptyBlock:
     - spec/*.rb
 Style/BlockDelimiters:
   Enabled: false
+Style/GlobalVars:
+  AllowedVariables: [$last_status]
 Style/MethodCallWithoutArgsParentheses:
   Enabled: false
 Style/NumericLiterals:
