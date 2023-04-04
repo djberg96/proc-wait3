@@ -4,25 +4,22 @@ on:
   push:
     branches: [ main ]
     paths-ignore:
-      - '**/README.md'
-      - '**/CHANGES.md'
-      - '**/MANIFEST.md'
+      - '**/*.md'
   pull_request:
     branches: [ main ]
     paths-ignore:
-      - '**/README.md'
-      - '**/CHANGES.md'
-      - '**/MANIFEST.md'
+      - '**/*.md'
+  workflow_dispatch:
 
 jobs:
   test:
     strategy:
       matrix:
-        ruby-version: ['2.6', '2.7']
+        ruby-version: ['2.6', '2.7', '3.0', '3.1', '3.2']
         platform: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
