@@ -787,7 +787,7 @@ static VALUE proc_getdtablesize(VALUE mod){
  * Adds the wait3, wait4, waitid, pause, sigsend, and getrusage methods to the
  * Process module.
  */
-void Init_wait3()
+void Init_wait3(void)
 {
   v_procstat_struct =
     rb_struct_define("ProcStat","pid","status","utime","stime","maxrss",
