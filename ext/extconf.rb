@@ -7,7 +7,7 @@ require 'mkmf'
 dir_config('proc-wait3')
 
 have_header('wait.h')
-have_header('sys/resource.h')
+have_header('sys/resource.h') # apt install libbsd-dev
 have_header('sys/wait.h')
 
 # wait3 is mandatory.
