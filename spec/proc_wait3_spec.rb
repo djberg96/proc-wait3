@@ -9,6 +9,9 @@ require 'rspec'
 require 'rbconfig'
 
 RSpec.describe Process do
+  # Something in the guts of Ruby was being a pain.
+  Signal.trap('CHLD', 'IGNORE') if RUBY_VERSION.to_f < 3
+
   let(:solaris) { RbConfig::CONFIG['host_os'] =~ /sunos|solaris/i }
   let(:darwin)  { RbConfig::CONFIG['host_os'] =~ /darwin|osx/i }
   let(:hpux)    { RbConfig::CONFIG['host_os'] =~ /hpux/i }
