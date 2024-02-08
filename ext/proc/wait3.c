@@ -29,7 +29,7 @@
 VALUE v_last_status;
 VALUE v_procstat_struct, v_siginfo_struct, v_usage_struct;
 
-static void sigproc(int signum);
+static void sigproc(int signum, siginfo_t* info, void* ucontext);
 
 /*
  * Returns true if this process is stopped. This is only returned
@@ -572,7 +572,7 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
  */
 static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
    VALUE v_signals;
-   int i;
+   int i, res;
    long len;
 
    rb_scan_args(argc, argv, "0*", &v_signals);
@@ -585,6 +585,7 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
       char signame[SIG2STR_MAX];
       unsigned int max = SIG2STR_MAX;
       int signum;
+      struct sigaction act, sa;
 
       for(i = 0; i < len; i++){
          v_val = rb_ary_shift(v_signals);
@@ -613,7 +614,13 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
             signum = NUM2INT(v_val);
          }
 
-         sigset(signum, sigproc);
+         memset(&act, 0, sizeof(act));
+         act.sa_flags = SA_SIGINFO;
+         act.sa_sigaction = sigproc;
+         res = sigaction(signum, &act, &sa);
+
+         if(res)
+          rb_sys_fail("sigaction");
       }
    }
 
@@ -624,7 +631,7 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
  * This is just a placeholder proc to prevent the "pause" method from exiting
  * the program if the appropriate signal is intercepted.
  */
-static void sigproc(int signum){ /* Do nothing */ }
+static void sigproc(int signum, siginfo_t* info, void* ucontext){ /* Do nothing */ }
 
 #ifdef HAVE_SIGSEND
 /*

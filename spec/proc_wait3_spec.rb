@@ -9,13 +9,14 @@ require 'rspec'
 require 'rbconfig'
 
 RSpec.describe Process do
-  Signal.trap('CHLD', 'IGNORE')
+  # Something in the guts of Ruby was being a pain.
+  Signal.trap('CHLD', 'IGNORE') if RUBY_VERSION.to_f < 3
 
   let(:solaris) { RbConfig::CONFIG['host_os'] =~ /sunos|solaris/i }
   let(:darwin)  { RbConfig::CONFIG['host_os'] =~ /darwin|osx/i }
   let(:hpux)    { RbConfig::CONFIG['host_os'] =~ /hpux/i }
   let(:linux)   { RbConfig::CONFIG['host_os'] =~ /linux/i }
-  let(:freebsd) { RbConfig::CONFIG['host_os'] =~ /bsd/i }
+  let(:bsd)     { RbConfig::CONFIG['host_os'] =~ /bsd|dragonfly/i }
 
   let(:proc_stat_members) {
     %i[
@@ -131,20 +132,20 @@ RSpec.describe Process do
   end
 
   example "waitid method is defined" do
-    skip 'waitid test skipped on this platform' if hpux || darwin || freebsd
+    skip 'waitid test skipped on this platform' if hpux || darwin || bsd
 
     expect(Process).to respond_to(:waitid)
   end
 
   example "waitid method works as expected" do
-    skip 'waitid test skipped on this platform' if hpux || darwin || freebsd
+    skip 'waitid test skipped on this platform' if hpux || darwin || bsd
 
     @pid = fork{ sleep 0.5 }
     expect{ Process.waitid(Process::P_PID, @pid, Process::WEXITED) }.not_to raise_error
   end
 
   example "waitid method raises expected errors if wrong argument type is passed" do
-    skip 'waitid test skipped on this platform' if hpux || darwin || freebsd
+    skip 'waitid test skipped on this platform' if hpux || darwin || bsd
 
     @pid = fork{ sleep 0.5 }
     expect{ Process.waitid("foo", @pid, Process::WEXITED) }.to raise_error(TypeError)
@@ -153,7 +154,7 @@ RSpec.describe Process do
   end
 
   example "waitid method raises expected error if invalid argument is passed" do
-    skip 'waitid test skipped on this platform' if hpux || darwin || freebsd
+    skip 'waitid test skipped on this platform' if hpux || darwin || bsd
 
     @pid = fork{ sleep 0.5 }
     expect{ Process.waitid(Process::P_PID, 99999999, Process::WEXITED) }.to raise_error(Errno::ECHILD)
@@ -202,7 +203,7 @@ RSpec.describe Process do
   end
 
   example "expected constants are defined" do
-    skip 'wait constant check skipped on this platform' if darwin || freebsd
+    skip 'wait constant check skipped on this platform' if darwin || bsd
 
     expect(Process::WCONTINUED).not_to be_nil
     expect(Process::WEXITED).not_to be_nil
@@ -214,7 +215,7 @@ RSpec.describe Process do
   end
 
   example "expected process type flag constants are defined" do
-    skip 'process type flag check skipped on this platform' if linux || darwin || freebsd
+    skip 'process type flag check skipped on this platform' if linux || darwin || bsd
 
     expect(Process::P_ALL).not_to be_nil
     expect(Process::P_CID).not_to be_nil

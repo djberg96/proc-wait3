@@ -7,7 +7,7 @@ require 'mkmf'
 dir_config('proc-wait3')
 
 have_header('wait.h')
-have_header('sys/resource.h')
+have_header('sys/resource.h') # apt install libbsd-dev
 have_header('sys/wait.h')
 
 # wait3 is mandatory.
@@ -53,20 +53,7 @@ have_struct_member('struct siginfo', 'si_stime', 'signal.h')
 
 have_const('P_CID', 'signal.h')
 have_const('P_GID', 'signal.h')
-have_const('P_MYID', 'signal.hclass PasswdStruct < FFI::Struct
-      layout(
-        :pw_name, :string,
-        :pw_passwd, :string,
-        :pw_uid, :uint,
-        :pw_gid, :uint,
-        :pw_change, :ulong,
-        :pw_class, :string,
-        :pw_gecos, :string,
-        :pw_dir, :string,
-        :pw_shell, :string,
-        :pw_expire, :ulong
-      )
-    end')
+have_const('P_MYID', 'signal.h')
 have_const('P_SID', 'signal.h')
 have_const('P_UID', 'signal.h')
 
