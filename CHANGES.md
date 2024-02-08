@@ -1,3 +1,7 @@
+## 1.9.1 - 8-Feb-2024
+* Replace sigset with sigaction in the pause method.
+* General cleanup and platform handling updates.
+
 ## 1.9.0 - 7-Jan-2021
 * Switched from test-unit to rspec.
 * Skip some tests on Darwin because of EINTR errors.

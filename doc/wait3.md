@@ -198,6 +198,9 @@ The `wait3` and `wait4` methods are similar to the `wait2` and `waitpid2`
 methods, except that they return much more information via the rusage
 struct.
 
+## Future Plans
+Wrap the wait6 function, and add better BSD support in general.
+
 ## Known Bugs
 None that I'm aware of. Please log any bugs on the Github project
 page at https://github.com/djberg96/proc-wait3.
@@ -206,7 +209,7 @@ page at https://github.com/djberg96/proc-wait3.
 Apache-2.0
 
 ## Copyright
-(C) 2003-2021 Daniel J. Berger
+(C) 2003-2024 Daniel J. Berger
 
 All Rights Reserved.
 
