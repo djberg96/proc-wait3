@@ -11,7 +11,7 @@ require 'proc/wait3'
 
 puts "Pausing.  Hit Ctrl-C to continue."
 
-if RbConfig::CONFIG['host_os'] =~ /linux/i
+if RbConfig::CONFIG['host_os'] =~ /linux|darwin/i
    Process.pause(2)
 else
    Process.pause("INT")
