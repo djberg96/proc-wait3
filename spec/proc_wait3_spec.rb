@@ -193,7 +193,7 @@ RSpec.describe Process do
     expect(Process::WSTOPPED).not_to be_nil
   end
 
-  example 'expected constant WTRAPPED is defined', :skip_linux do
+  example 'expected constant WTRAPPED is defined', :bsd do
     expect(Process::WTRAPPED).not_to be_nil
   end
 
