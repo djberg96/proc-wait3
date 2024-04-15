@@ -14,7 +14,7 @@ have_header('sys/wait.h')
 
 # wait3 is mandatory.
 unless have_func('wait3')
-  STDERR.puts 'wait3() function not found'
+  warn 'wait3() function not found'
   exit
 end
 
@@ -38,6 +38,7 @@ have_func('sigset')
 have_func('sigsend')
 have_func('getrusage')
 have_func('getdtablesize')
+have_func('wait6')
 
 have_struct_member('struct siginfo', 'si_fd', 'signal.h')
 have_struct_member('struct siginfo', 'si_trapno', 'signal.h')
@@ -69,5 +70,8 @@ have_const('P_TASKID', 'signal.h')
 
 # RUSAGE_THREAD is Linux-specific
 have_const('RUSAGE_THREAD', 'sys/resource.h')
+
+# BSD
+have_const('P_JAILID', 'sys/wait.h')
 
 create_makefile('proc/wait3', 'proc')
