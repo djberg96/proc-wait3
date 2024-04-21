@@ -1,6 +1,7 @@
 require 'rake'
 require 'rake/clean'
 require 'rspec/core/rake_task'
+require 'rubocop/rake_task'
 require 'fileutils'
 require 'rbconfig'
 include RbConfig
@@ -75,3 +76,5 @@ RSpec::Core::RakeTask.new(:spec) do |t|
 end
 
 task :default => [:build, :spec]
+
+RuboCop::RakeTask.new
