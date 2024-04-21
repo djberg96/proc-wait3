@@ -11,7 +11,7 @@ require 'pp'
 
 # Show resource stats for this process for 30 seconds
 10.times do
-   pp Process.getrusage
+  pp Process.getrusage
    puts '=' * 50
    sleep 3 
 end
