@@ -50,7 +50,7 @@ RSpec.describe Process do
     skip 'wait3 test skipped on this platform' if darwin
     @pid = fork { sleep 0.5 }
     expect { @proc_stat = described_class.wait3 }.not_to raise_error
-    expect( @proc_stat.members).to eq(proc_stat_members)
+    expect(@proc_stat.members).to eq(proc_stat_members)
   end
 
   example 'wait3 with WNOHANG works as expected' do
