@@ -6,10 +6,11 @@
 #
 # Modify as you see fit.
 #######################################################################
+require 'English'
 require 'proc/wait3'
 
 pid = fork { sleep 1; exit 2 }
 
 p Time.now
 Process.wait3
-p $?
+p $CHILD_STATUS

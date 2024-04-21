@@ -4,6 +4,7 @@
 # Test suite for the Ruby proc-wait3 library. You should run these
 # via the 'rake spec' task.
 #######################################################################
+require 'English'
 require 'proc/wait3'
 require 'rspec'
 require 'rbconfig'
@@ -70,7 +71,7 @@ RSpec.describe Process do
     skip 'wait3 test skipped on this platform' if darwin
     @pid = fork { sleep 0.5 }
     described_class.wait3
-    expect($?).not_to be_nil
+    expect($CHILD_STATUS).not_to be_nil
   end
 
   example 'wait3 returns frozen struct' do
@@ -120,7 +121,7 @@ RSpec.describe Process do
 
     @pid = fork { sleep 0.5 }
     described_class.wait4(@pid)
-    expect($?).not_to be_nil
+    expect($CHILD_STATUS).not_to be_nil
   end
 
   example 'wait4 returns frozen struct' do
