@@ -7,5 +7,5 @@ AllCops:
   NewCops: enable
   Exclude:
     - Gemfile
-    - gis-distance.gemspec
+    - proc-wait3.gemspec
     - Rakefile
