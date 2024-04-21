@@ -84,7 +84,7 @@ RSpec.describe Process do
     skip 'getdtablesize skipped on this platform' unless solaris
 
     expect(Process).to respond_to(:getdtablesize)
-    expect(Process.getdtablesize).to be_kind_of(Fixnum)
+    expect(Process.getdtablesize).to be_kind_of(Integer)
     assert(Process.getdtablesize > 0)
   end
 
