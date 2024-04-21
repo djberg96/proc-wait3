@@ -35,7 +35,7 @@ RSpec.describe Process do
   end
 
   example 'version constant is set to expected value' do
-    expect(Process::WAIT3_VERSION).to eq('1.9.1')
+    expect(Process::WAIT3_VERSION).to eq('1.9.2')
     expect(Process::WAIT3_VERSION).to be_frozen
   end
 
@@ -237,6 +237,11 @@ RSpec.describe Process do
 
     expect(Process::P_TASKID).not_to be_nil
     expect(Process::P_PROJID).not_to be_nil
+  end
+
+  example 'bsd-specific process type flags are defined on BSD platforms' do
+    skip 'P_JAILID constant check skipped on this platform' unless bsd
+    expect(Process::P_JAILID).not_to be_nil
   end
 
   def after

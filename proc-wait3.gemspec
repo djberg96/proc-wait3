@@ -2,7 +2,7 @@ require 'rubygems'
 
 Gem::Specification.new do |spec|
   spec.name       = 'proc-wait3'
-  spec.version    = '1.9.1'
+  spec.version    = '1.9.2'
   spec.author     = 'Daniel J. Berger'
   spec.license    = 'Apache-2.0'
   spec.email      = 'djberg96@gmail.com'
@@ -25,7 +25,8 @@ Gem::Specification.new do |spec|
     'documentation_uri'     => 'https://github.com/djberg96/proc-wait3/wiki',
     'source_code_uri'       => 'https://github.com/djberg96/proc-wait3',
     'wiki_uri'              => 'https://github.com/djberg96/proc-wait3/wiki',
-    'rubygems_mfa_required' => 'true'
+    'rubygems_mfa_required' => 'true',
+    'github_repo'           => 'https://github.com/djberg96/proc-wait3'
   }
 
   spec.description = <<-EOF
