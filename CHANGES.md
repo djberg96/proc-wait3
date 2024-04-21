@@ -1,3 +1,9 @@
+## 1.9.2 - 21-Apr-2024
+* Added the P_JAILID constant for BSD platforms.
+* Added some notes to the README for coping with EINTR.
+* Added rubocop and rubocop-rspec as dev dependencies and did
+  some general rubocop cleanup.
+
 ## 1.9.1 - 8-Feb-2024
 * Replace sigset with sigaction in the pause method.
 * General cleanup and platform handling updates.
