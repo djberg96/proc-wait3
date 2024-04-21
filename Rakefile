@@ -1,6 +1,7 @@
 require 'rake'
 require 'rake/clean'
 require 'rspec/core/rake_task'
+require 'rubocop/rake_task'
 require 'fileutils'
 require 'rbconfig'
 include RbConfig
@@ -27,7 +28,7 @@ task :build => [:clean] do |t|
 end
 
 namespace :gem do
-  desc "Create the proc-wait3 gem"
+  desc 'Create the proc-wait3 gem'
   task :create => [:clean] do
     require 'rubygems/package'
     spec = Gem::Specification.load('proc-wait3.gemspec')
@@ -35,7 +36,7 @@ namespace :gem do
     Gem::Package.build(spec)
   end
 
-  desc "Install the proc-wait3 gem"
+  desc 'Install the proc-wait3 gem'
   task :install => [:create] do |t|
     file = Dir['*.gem'].first
     sh "gem install -l #{file}"
@@ -69,9 +70,11 @@ namespace :example do
   end
 end
 
-desc "Run the test suite"
+desc 'Run the test suite'
 RSpec::Core::RakeTask.new(:spec) do |t|
   t.rspec_opts = '-Iext'
 end
 
 task :default => [:build, :spec]
+
+RuboCop::RakeTask.new

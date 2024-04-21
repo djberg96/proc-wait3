@@ -1,0 +1,11 @@
+require: rubocop-rspec
+
+RSpec/MultipleExpectations:
+  Max: 4
+
+AllCops:
+  NewCops: enable
+  Exclude:
+    - Gemfile
+    - proc-wait3.gemspec
+    - Rakefile

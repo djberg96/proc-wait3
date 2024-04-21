@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ########################################################################
 # example_getrusage.rb
 #
@@ -11,7 +13,7 @@ require 'pp'
 
 # Show resource stats for this process for 30 seconds
 10.times do
-   pp Process.getrusage
-   puts "=" * 50
-   sleep 3 
+  pp Process.getrusage
+  puts '=' * 50
+  sleep 3
 end

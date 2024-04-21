@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ########################################################
 # Use the mkmf.rb file that I provide, so I can use the
 # have_enum_member method

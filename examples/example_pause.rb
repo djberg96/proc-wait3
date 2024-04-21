@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #######################################################################
 # example_pause.rb
 #
@@ -9,13 +11,13 @@
 require 'rbconfig'
 require 'proc/wait3'
 
-puts "Pausing.  Hit Ctrl-C to continue."
+puts 'Pausing.  Hit Ctrl-C to continue.'
 
 if RbConfig::CONFIG['host_os'] =~ /linux|darwin/i
-   Process.pause(2)
+  Process.pause(2)
 else
-   Process.pause("INT")
+  Process.pause('INT')
 end
 
-puts "Hey, thanks for hitting Ctrl-C.  Continuing..."
-puts "Done"
+puts 'Hey, thanks for hitting Ctrl-C.  Continuing...'
+puts 'Done'

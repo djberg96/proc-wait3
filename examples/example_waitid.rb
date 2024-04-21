@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #######################################################################
 # example_waitid.rb
 #
@@ -6,9 +8,10 @@
 #
 # Modify as you see fit.
 #######################################################################
+require 'English'
 require 'proc/wait3'
 
-pid = fork{ sleep 2 }
+pid = fork { sleep 2 }
 p Time.now
 Process.waitid(Process::P_PID, pid, Process::WEXITED)
-p $?
+p $CHILD_STATUS

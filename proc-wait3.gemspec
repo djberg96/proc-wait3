@@ -10,11 +10,13 @@ Gem::Specification.new do |spec|
   spec.summary    = 'Adds wait3, wait4 and other methods to the Process module'
   spec.test_file  = 'spec/proc_wait3_spec.rb'
   spec.extensions = ['ext/extconf.rb']
-  spec.files      = Dir['**/*'].reject{ |f| f.include?('git') }
+  spec.files      = Dir['**/*'].reject { |f| f.include?('git') }
   spec.cert_chain = Dir['certs/*']
 
   spec.add_development_dependency('rake')
   spec.add_development_dependency('rspec', '~> 3.9')
+  spec.add_development_dependency('rubocop')
+  spec.add_development_dependency('rubocop-rspec')
 
   spec.metadata = {
     'homepage_uri'          => 'https://github.com/djberg96/proc-wait3',
