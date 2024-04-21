@@ -8,7 +8,7 @@
 #######################################################################
 require 'proc/wait3'
 
-pid = fork{ sleep 2 }
+pid = fork { sleep 2 }
 p Time.now
 Process.waitid(Process::P_PID, pid, Process::WEXITED)
 p $?

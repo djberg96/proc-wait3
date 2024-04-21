@@ -8,7 +8,7 @@
 #######################################################################
 require 'proc/wait3'
 
-pid = fork{ sleep 1; exit 2 }
+pid = fork { sleep 1; exit 2 }
 
 p Time.now
 Process.wait3

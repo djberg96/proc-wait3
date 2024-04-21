@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.summary    = 'Adds wait3, wait4 and other methods to the Process module'
   spec.test_file  = 'spec/proc_wait3_spec.rb'
   spec.extensions = ['ext/extconf.rb']
-  spec.files      = Dir['**/*'].reject{ |f| f.include?('git') }
+  spec.files      = Dir['**/*'].reject { |f| f.include?('git') }
   spec.cert_chain = Dir['certs/*']
 
   spec.add_development_dependency('rake')

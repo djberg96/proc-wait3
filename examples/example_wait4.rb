@@ -8,7 +8,7 @@
 #######################################################################
 require 'proc/wait3'
 
-pid = fork{ sleep 2 }
+pid = fork { sleep 2 }
 p Time.now
 Process.wait4(pid, Process::WUNTRACED)
 p $?
