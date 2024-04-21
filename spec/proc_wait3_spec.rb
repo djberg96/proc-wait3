@@ -62,7 +62,7 @@ RSpec.describe Process do
     skip 'wait3 test skipped on this platform' if darwin
     @pid = fork { sleep 0.5 }
     Process.wait3
-    expect($last_status).to be_kind_of(Struct::ProcStat)
+    expect($last_status).to be_a(Struct::ProcStat)
     expect($last_status).not_to be_nil
   end
 
@@ -84,7 +84,7 @@ RSpec.describe Process do
     skip 'getdtablesize skipped on this platform' unless solaris
 
     expect(Process).to respond_to(:getdtablesize)
-    expect(Process.getdtablesize).to be_kind_of(Integer)
+    expect(Process.getdtablesize).to be_a(Integer)
     assert(Process.getdtablesize > 0)
   end
 
@@ -103,7 +103,7 @@ RSpec.describe Process do
 
     @pid = fork { sleep 0.5 }
     expect { @proc_stat = Process.wait4(@pid) }.not_to raise_error
-    expect(@proc_stat).to be_kind_of(Struct::ProcStat)
+    expect(@proc_stat).to be_a(Struct::ProcStat)
   end
 
   example 'wait4 sets and returns $last_status to expected values' do
@@ -111,7 +111,7 @@ RSpec.describe Process do
 
     @pid = fork { sleep 0.5 }
     Process.wait4(@pid)
-    expect($last_status).to be_kind_of(Struct::ProcStat)
+    expect($last_status).to be_a(Struct::ProcStat)
     expect($last_status).not_to be_nil
   end
 
@@ -193,9 +193,9 @@ RSpec.describe Process do
     skip 'getrusage only tested on Linux' unless linux
 
     @pid = fork { sleep 0.5 }
-    expect(Process.getrusage).to be_kind_of(Struct::RUsage)
-    expect(Process.getrusage.stime).to be_kind_of(Float)
-    expect(Process.getrusage.utime).to be_kind_of(Float)
+    expect(Process.getrusage).to be_a(Struct::RUsage)
+    expect(Process.getrusage.stime).to be_a(Float)
+    expect(Process.getrusage.utime).to be_a(Float)
   end
 
   example 'pause method is defined' do
