@@ -12,4 +12,5 @@ RSpec.configure do |config|
   config.filter_run_excluding(:skip_hpux) if Gem::Platform.local.os =~ /hpux/i
   config.filter_run_excluding(:skip_darwin) if Gem::Platform.local.os =~ /darwin|macos/i
   config.filter_run_excluding(:skip_bsd) if Gem::Platform.local.os =~ /bsd|dragonfly/i
+  config.filter_run_excluding(:skip_linux) if Gem::Platform.local.os =~ /linux/i
 end
