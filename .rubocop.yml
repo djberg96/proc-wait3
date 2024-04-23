@@ -2,6 +2,12 @@ require: rubocop-rspec
 
 RSpec/MultipleExpectations:
   Max: 4
+RSpec/InstanceVariable:
+  Enabled: false
+RSpec/FilePath:
+  Enabled: false
+RSpec/SpecFilePathFormat:
+  Enabled: false
 
 AllCops:
   NewCops: enable
@@ -9,3 +15,9 @@ AllCops:
     - Gemfile
     - proc-wait3.gemspec
     - Rakefile
+    - examples/*.rb
+
+Naming/FileName:
+  Enabled: false
+Style/GlobalVars:
+  Enabled: false

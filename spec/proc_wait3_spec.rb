@@ -16,13 +16,13 @@ require 'spec_helper'
 require 'rbconfig'
 
 RSpec.describe Process do
-  let(:proc_stat_members) {
+  let(:proc_stat_members) do
     %i[
       pid status utime stime maxrss ixrss idrss isrss minflt majflt nswap
       inblock oublock msgsnd msgrcv nsignals nvcsw nivcsw stopped signaled
       exited success coredump exitstatus termsig stopsig
     ]
-  }
+  end
 
   before do
     @proc_stat = nil
@@ -148,7 +148,7 @@ RSpec.describe Process do
 
   example 'waitid method raises expected error if invalid argument is passed', :skip_hpux do
     @pid = fork { sleep 0.5 }
-    expect { described_class.waitid(Process::P_PID, 99999999, Process::WEXITED) }.to raise_error(Errno::ECHILD)
+    expect { described_class.waitid(Process::P_PID, 99_999_999, Process::WEXITED) }.to raise_error(Errno::ECHILD)
   end
 
   example 'sigsend method is defined', :solaris do
@@ -186,7 +186,7 @@ RSpec.describe Process do
     expect(described_class).to respond_to(:pause)
   end
 
-  example 'expected constants are defined', :skip_darwin, :skip_bsd do
+  example 'expected constants are defined', :skip_bsd, :skip_darwin do
     expect(Process::WCONTINUED).not_to be_nil
     expect(Process::WEXITED).not_to be_nil
     expect(Process::WNOWAIT).not_to be_nil
