@@ -1,4 +1,5 @@
 #include <ruby.h>
+#include <ruby/thread.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -30,6 +31,13 @@ VALUE v_last_status;
 VALUE v_procstat_struct, v_siginfo_struct, v_usage_struct;
 
 static void sigproc(int signum, siginfo_t* info, void* ucontext);
+
+struct wait3_args {
+  int status;
+  int flags;
+  struct rusage r;
+  pid_t pid;
+};
 
 /*
  * Returns true if this process is stopped. This is only returned
@@ -131,6 +139,13 @@ static VALUE pst_wstopsig(int status)
   return Qnil;
 }
 
+
+static void* wait3_no_gvl(void* data){
+  struct wait3_args *args = data;
+  args->pid = wait3(&args->status, args->flags, &args->r);
+  return NULL;
+}
+
 /*
  * call-seq:
  *    Process.wait3(flags=nil)
@@ -142,62 +157,60 @@ static VALUE pst_wstopsig(int status)
  * set. Raises a SystemError if there are no child processes.
  */
 static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
-   int status;
-   int flags = 0;
-   struct rusage r;
-   pid_t pid;
-   VALUE v_flags = Qnil;
+  int flags = 0;
+  struct wait3_args args;
+  VALUE v_flags = Qnil;
 
-   rb_scan_args(argc,argv,"01",&v_flags);
+  rb_scan_args(argc, argv, "01", &v_flags);
 
-   if(Qnil != v_flags){
-      flags = NUM2INT(v_flags);
-   }
+  if(Qnil != v_flags){
+    flags = NUM2INT(v_flags);
+  }
 
-   bzero(&r, sizeof(r));
-   pid = wait3(&status, flags, &r);
+  args.flags = flags;
+  rb_thread_call_without_gvl(wait3_no_gvl, &args, NULL, NULL);
 
-   if(pid < 0){
-      rb_sys_fail("wait3");
-   }
-   else if(pid > 0){
-      v_last_status = rb_struct_new(v_procstat_struct,
-         INT2FIX(pid),
-         INT2FIX(status),
-         rb_float_new((double)r.ru_utime.tv_sec+(double)r.ru_utime.tv_usec/1e6),
-         rb_float_new((double)r.ru_stime.tv_sec+(double)r.ru_stime.tv_usec/1e6),
-         LONG2NUM(r.ru_maxrss),
-         LONG2NUM(r.ru_ixrss),
-         LONG2NUM(r.ru_idrss),
-         LONG2NUM(r.ru_isrss),
-         LONG2NUM(r.ru_minflt),
-         LONG2NUM(r.ru_majflt),
-         LONG2NUM(r.ru_nswap),
-         LONG2NUM(r.ru_inblock),
-         LONG2NUM(r.ru_oublock),
-         LONG2NUM(r.ru_msgsnd),
-         LONG2NUM(r.ru_msgrcv),
-         LONG2NUM(r.ru_nsignals),
-         LONG2NUM(r.ru_nvcsw),
-         LONG2NUM(r.ru_nivcsw),
-         pst_wifstopped(status),
-         pst_wifsignaled(status),
-         pst_wifexited(status),
-         pst_success_p(status),
-         pst_wcoredump(status),
-         pst_wexitstatus(status),
-         pst_wtermsig(status),
-         pst_wstopsig(status)
-      );
+  if(args.pid < 0){
+    rb_sys_fail("wait3");
+  }
+  else if(args.pid > 0){
+    v_last_status = rb_struct_new(v_procstat_struct,
+      INT2FIX(args.pid),
+      INT2FIX(args.status),
+      rb_float_new((double)args.r.ru_utime.tv_sec + (double)args.r.ru_utime.tv_usec/1e6),
+      rb_float_new((double)args.r.ru_stime.tv_sec + (double)args.r.ru_stime.tv_usec/1e6),
+      LONG2NUM(args.r.ru_maxrss),
+      LONG2NUM(args.r.ru_ixrss),
+      LONG2NUM(args.r.ru_idrss),
+      LONG2NUM(args.r.ru_isrss),
+      LONG2NUM(args.r.ru_minflt),
+      LONG2NUM(args.r.ru_majflt),
+      LONG2NUM(args.r.ru_nswap),
+      LONG2NUM(args.r.ru_inblock),
+      LONG2NUM(args.r.ru_oublock),
+      LONG2NUM(args.r.ru_msgsnd),
+      LONG2NUM(args.r.ru_msgrcv),
+      LONG2NUM(args.r.ru_nsignals),
+      LONG2NUM(args.r.ru_nvcsw),
+      LONG2NUM(args.r.ru_nivcsw),
+      pst_wifstopped(args.status),
+      pst_wifsignaled(args.status),
+      pst_wifexited(args.status),
+      pst_success_p(args.status),
+      pst_wcoredump(args.status),
+      pst_wexitstatus(args.status),
+      pst_wtermsig(args.status),
+      pst_wstopsig(args.status)
+    );
 
-      rb_last_status_set(status, pid);
-      OBJ_FREEZE(v_last_status);
+    rb_last_status_set(args.status, args.pid);
+    OBJ_FREEZE(v_last_status);
 
-      return v_last_status;
-   }
-   else{
-      return Qnil;
-   }
+    return v_last_status;
+  }
+  else{
+    return Qnil;
+  }
 }
 
 #ifdef HAVE_WAIT4
