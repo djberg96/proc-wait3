@@ -154,6 +154,7 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
       flags = NUM2INT(v_flags);
    }
 
+   bzero(&r, sizeof(r));
    pid = wait3(&status, flags, &r);
 
    if(pid < 0){
@@ -226,6 +227,7 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
    if(RTEST(v_flags))
       flags = NUM2INT(v_flags);
 
+   bzero(&r, sizeof(r));
    pid = wait4(pid, &status, flags, &r);
 
    if(pid < 0){
@@ -587,6 +589,9 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
       int signum;
       struct sigaction act, sa;
 
+      bzero(&act, sizeof(act));
+      bzero(&sa, sizeof(sa));
+
       for(i = 0; i < len; i++){
          v_val = rb_ary_shift(v_signals);
 
@@ -751,6 +756,8 @@ static VALUE proc_getrusage(int argc, VALUE* argv, VALUE mod){
     who = FIX2INT(v_children);
   else if(RTEST(v_children))
     who = RUSAGE_CHILDREN;
+
+  bzero(&r, sizeof(r));
 
   if(getrusage(who,&r) == -1)
     rb_sys_fail("getrusage");
