@@ -173,6 +173,8 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
     flags = NUM2INT(v_flags);
   }
 
+  bzero(&args, sizeof(args));
+
   args.flags = flags;
   rb_thread_call_without_gvl(wait3_no_gvl, &args, NULL, NULL);
 
@@ -244,6 +246,8 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
 
   if(RTEST(v_flags))
     flags = NUM2INT(v_flags);
+
+  bzero(&args, sizeof(args));
 
   args.flags = flags;
   args.pid = pid;
