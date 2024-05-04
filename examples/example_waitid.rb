@@ -8,10 +8,20 @@
 #
 # Modify as you see fit.
 #######################################################################
-require 'English'
 require 'proc/wait3'
 
-pid = fork { sleep 2 }
+pid1 = fork { puts "PID1 GRP: #{Process.getpgrp}"; sleep 2 }
+pid2 = fork { puts "PID2 GRP: #{Process.getpgrp}"; sleep 3 }
+pid3 = fork { puts "PID2 GRP: #{Process.getpgrp}"; sleep 4 }
+
+puts "PID1: #{pid1}"
+puts "PID2: #{pid2}"
+puts "PID3: #{pid3}"
+
+puts "MAIN GRP: #{Process.getpgrp}"
 p Time.now
-Process.waitid(Process::P_PID, pid, Process::WEXITED)
-p $CHILD_STATUS
+
+status = Process.waitid(Process::P_PGID, Process.getpgrp, Process::WEXITED)
+
+# status.pid should equal pid1 since it exits first
+p status
