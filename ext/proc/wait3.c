@@ -973,8 +973,8 @@ void Init_wait3(void)
   rb_define_const(rb_mProcess, "RUSAGE_THREAD", INT2FIX(RUSAGE_THREAD));
 #endif
 
-  /* 1.9.2: The version of the proc-wait3 library */
-  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_freeze(rb_str_new2("1.9.2")));
+  /* 1.9.3: The version of the proc-wait3 library */
+  rb_define_const(rb_mProcess, "WAIT3_VERSION", rb_str_freeze(rb_str_new2("1.9.3")));
 
   /* Define this last in our Init_wait3 function */
   rb_define_readonly_variable("$last_status", &v_last_status);

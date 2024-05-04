@@ -1,3 +1,6 @@
+## 1.9.3 - 4-May-2024
+* Some internal refactoring where I bzero C structs before using them.
+
 ## 1.9.2 - 21-Apr-2024
 * Added the P_JAILID constant for BSD platforms.
 * Added some notes to the README for coping with EINTR.

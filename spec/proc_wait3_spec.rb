@@ -48,7 +48,7 @@ RSpec.describe Process do
   end
 
   example 'version constant is set to expected value' do
-    expect(Process::WAIT3_VERSION).to eq('1.9.2')
+    expect(Process::WAIT3_VERSION).to eq('1.9.3')
     expect(Process::WAIT3_VERSION).to be_frozen
   end
 
