@@ -39,6 +39,14 @@ struct wait_args {
   pid_t pid;
 };
 
+struct waitid_args {
+  siginfo_t infop;
+  idtype_t idtype;
+  id_t id;
+  int options;
+  int rv;
+};
+
 /*
  * Returns true if this process is stopped. This is only returned
  * returned if the corresponding wait() call had the WUNTRACED flag
@@ -46,10 +54,10 @@ struct wait_args {
  */
 static VALUE pst_wifstopped(int status)
 {
-   if(WIFSTOPPED(status))
-      return Qtrue;
-   else
-      return Qfalse;
+  if(WIFSTOPPED(status))
+    return Qtrue;
+  else
+    return Qfalse;
 }
 
 /*
@@ -139,7 +147,6 @@ static VALUE pst_wstopsig(int status)
   return Qnil;
 }
 
-
 static void* wait3_no_gvl(void* data){
   struct wait_args *args = data;
   args->pid = wait3(&args->status, args->flags, &args->r);
@@ -149,6 +156,12 @@ static void* wait3_no_gvl(void* data){
 static void* wait4_no_gvl(void* data){
   struct wait_args *args = data;
   args->pid = wait4(args->pid, &args->status, args->flags, &args->r);
+  return NULL;
+}
+
+static void* waitid_no_gvl(void* data){
+  struct waitid_args *args = data;
+  args->rv = waitid(args->idtype, args->id, &args->infop, args->options);
   return NULL;
 }
 
@@ -336,21 +349,17 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
  * Not supported on all platforms.
  */
 static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
-   VALUE v_type, v_id, v_options;
-   siginfo_t infop;
-   idtype_t idtype;
-   id_t id = 0;
-   int options = 0;
+  VALUE v_type, v_id, v_options;
+  struct waitid_args args;
 
-   rb_scan_args(argc, argv, "12", &v_type, &v_id, &v_options);
+  rb_scan_args(argc, argv, "12", &v_type, &v_id, &v_options);
+  bzero(&args, sizeof(args));
 
-   idtype = NUM2INT(v_type);
+  if(RTEST(v_id))
+    args.id = NUM2INT(v_id);
 
-   if(RTEST(v_id))
-      id = NUM2INT(v_id);
-
-   if(RTEST(v_options))
-      options = NUM2INT(v_options);
+  if(RTEST(v_options))
+    args.options = NUM2INT(v_options);
 
    /* The Linux man page for waitid() says to zero out the pid field and check
     * its value after the call to waitid() to detect if there were children in
@@ -358,221 +367,221 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
     * simply check the infop.si_signo struct member against SI_NOINFO.
     */
 #ifndef SI_NOINFO
-   infop.si_pid = 0;
+  args.infop.si_pid = 0;
 #endif
 
-   if(waitid(idtype, id, &infop, options) == -1)
-      rb_sys_fail("waitid");
+  rb_thread_call_without_gvl(waitid_no_gvl, &args, NULL, NULL);
 
-    /* If the si_code struct member returns SI_NOINFO, or the si_pid member
-     * is still set to 0 after the call to waitid(), then only the si_signo
-     * member of the struct is meaningful.  In that case, we'll set all other
-     * members to nil.  Even if this condition doesn't arise, many of the
-     * SigInfo struct members may still be nil, depending on the value of
-     * si_signo.
-     *
-     * See Rich Teer's "Solaris Systems Programming", p 755 ff.
-     */
+  if(args.rv == -1)
+    rb_sys_fail("waitid");
+
+  /* If the si_code struct member returns SI_NOINFO, or the si_pid member
+   * is still set to 0 after the call to waitid(), then only the si_signo
+   * member of the struct is meaningful.  In that case, we'll set all other
+   * members to nil.  Even if this condition doesn't arise, many of the
+   * SigInfo struct members may still be nil, depending on the value of
+   * si_signo.
+   *
+   * See Rich Teer's "Solaris Systems Programming", p 755 ff.
+   */
 
 #ifdef SI_NOINFO
-   if(infop.si_code == SI_NOINFO){
+  if(args.infop.si_code == SI_NOINFO){
 #else
-   if(infop.si_pid == 0){
+  if(args.infop.si_pid == 0){
 #endif
-      v_last_status = rb_struct_new(v_siginfo_struct,
-         INT2FIX(infop.si_signo),
-         INT2FIX(infop.si_errno),
-         Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, /* code, pid, uid, utime, status, stime */
+    v_last_status = rb_struct_new(v_siginfo_struct,
+      INT2FIX(args.infop.si_signo),
+      INT2FIX(args.infop.si_errno),
+      Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, /* code, pid, uid, utime, status, stime */
 #ifdef HAVE_ST_SI_TRAPNO
-         Qnil,
+      Qnil,
 #endif
 #ifdef HAVE_ST_SI_PC
-         Qnil,
+      Qnil,
 #endif
-         Qnil, Qnil, /* fd, band */
+      Qnil, Qnil, /* fd, band */
 #ifdef HAVE_ST_SI_FADDR
-         Qnil,
+      Qnil,
 #endif
 #ifdef HAVE_ST_SI_TSTAMP
-         Qnil,
+      Qnil,
 #endif
 #ifdef HAVE_ST_SI_SYSCALL
-         Qnil,
+      Qnil,
 #endif
 #ifdef HAVE_ST_SI_NSYSARG
-         Qnil,
+      Qnil,
 #endif
 #ifdef HAVE_ST_SI_FAULT
-         Qnil,
+      Qnil,
 #endif
 #ifdef HAVE_ST_SI_SYSARG
-         Qnil,
+      Qnil,
 #endif
 #ifdef HAVE_ST_SI_MSTATE
-         Qnil,
+      Qnil,
 #endif
-         Qnil  /* entity */
-      );
-   }
-   else{
-      VALUE v_utime = Qnil, v_status = Qnil, v_stime = Qnil;
+      Qnil  /* entity */
+    );
+  }
+  else{
+    VALUE v_utime = Qnil, v_status = Qnil, v_stime = Qnil;
 #ifdef HAVE_ST_SI_FD
-      VALUE v_fd = Qnil;
+    VALUE v_fd = Qnil;
 #endif
 #ifdef HAVE_ST_SI_TRAPNO
-      VALUE v_trapno = Qnil;
+    VALUE v_trapno = Qnil;
 #endif
 #ifdef HAVE_ST_SI_PC
-      VALUE v_pc = Qnil;
+    VALUE v_pc = Qnil;
 #endif
 #ifdef HAVE_ST_SI_FADDR
-      VALUE v_addr = Qnil;
+    VALUE v_addr = Qnil;
 #endif
 #ifdef HAVE_ST_SI_TSTAMP
-      VALUE v_time = Qnil;
+    VALUE v_time = Qnil;
 #endif
 #ifdef HAVE_ST_SI_SYSCALL
-      VALUE v_syscall = Qnil;
+    VALUE v_syscall = Qnil;
 #endif
 #ifdef HAVE_ST_SI_NSYSARG
-      VALUE v_nsysarg = Qnil;
+    VALUE v_nsysarg = Qnil;
 #endif
 #ifdef HAVE_ST_SI_FAULT
-      VALUE v_fault = Qnil;
+    VALUE v_fault = Qnil;
 #endif
 #ifdef HAVE_ST_SI_SYSARG
-      VALUE v_sysarg = Qnil;
+    VALUE v_sysarg = Qnil;
 #endif
 #ifdef HAVE_ST_SI_MSTATE
-      VALUE v_state = Qnil;
+    VALUE v_state = Qnil;
 #endif
-      VALUE v_band = Qnil, v_entity = Qnil;
-      int sig = infop.si_signo;
-      int code = infop.si_code;
+    VALUE v_band = Qnil, v_entity = Qnil;
+    int sig = args.infop.si_signo;
+    int code = args.infop.si_code;
 
 #if defined(HAVE_ST_SI_SYSARG) || defined(HAVE_ST_SI_MSTATE)
-      int i = 0;
+    int i = 0;
 #endif
 
-      /* If Process.waitid returns because a child process was found that
-       * satisfies the conditions indicated by +id_type+ and +options+, then
-       * the si_signo struct member will always be SIGCHLD.
-       */
-      if(sig == SIGCHLD){
+    /* If Process.waitid returns because a child process was found that
+     * satisfies the conditions indicated by +id_type+ and +options+, then
+     * the si_signo struct member will always be SIGCHLD.
+     */
+    if(sig == SIGCHLD){
 #ifdef HAVE_ST_SI_UTIME
-         v_utime  = ULL2NUM(infop.si_utime);
+      v_utime  = ULL2NUM(args.infop.si_utime);
 #endif
 #ifdef HAVE_ST_SI_STATUS
-         v_status = ULL2NUM(infop.si_status);
+      v_status = ULL2NUM(args.infop.si_status);
 #endif
 #ifdef HAVE_ST_SI_STIME
-         v_stime  = ULL2NUM(infop.si_stime);
+      v_stime  = ULL2NUM(args.infop.si_stime);
 #endif
-      }
+    }
 
-      if(sig == SIGBUS || sig == SIGFPE || sig == SIGILL || sig == SIGSEGV ||
-         sig == SIGTRAP)
-      {
+    if(sig == SIGBUS || sig == SIGFPE || sig == SIGILL || sig == SIGSEGV || sig == SIGTRAP){
 #ifdef HAVE_ST_SI_TRAPNO
-         v_trapno = INT2FIX(infop.si_trapno);
+      v_trapno = INT2FIX(args.infop.si_trapno);
 #endif
 #ifdef HAVE_ST_SI_PC
-         v_pc = INT2FIX(infop.si_pc);
+      v_pc = INT2FIX(args.infop.si_pc);
 #endif
-      }
+    }
 
-      if(sig == SIGXFSZ){
+    if(sig == SIGXFSZ){
 #ifdef HAVE_ST_SI_FD
-         v_fd = INT2FIX(infop.si_fd);
+      v_fd = INT2FIX(args.infop.si_fd);
 #endif
-         if(code == POLL_IN || code == POLL_OUT || code == POLL_MSG){
-            v_band = LONG2FIX(infop.si_band);
-         }
+      if(code == POLL_IN || code == POLL_OUT || code == POLL_MSG){
+        v_band = LONG2FIX(args.infop.si_band);
       }
+    }
 
-      if(sig == SIGPROF){
+    if(sig == SIGPROF){
 #ifdef HAVE_ST_SI_SYSARG
-         int ssize = sizeof(infop.si_sysarg) / sizeof(infop.si_sysarg[0]);
-         v_sysarg  = rb_ary_new();
+      int ssize = sizeof(args.infop.si_sysarg) / sizeof(args.infop.si_sysarg[0]);
+      v_sysarg  = rb_ary_new();
 
-         for(i = 0; i < ssize; i++)
-            rb_ary_push(v_sysarg, LONG2FIX(infop.si_sysarg[i]));
+      for(i = 0; i < ssize; i++)
+        rb_ary_push(v_sysarg, LONG2FIX(args.infop.si_sysarg[i]));
 #endif
 #ifdef HAVE_ST_SI_MSTATE
-         int msize = sizeof(infop.si_mstate) / sizeof(infop.si_mstate[0]);
-         v_state  = rb_ary_new();
+      int msize = sizeof(args.infop.si_mstate) / sizeof(args.infop.si_mstate[0]);
+      v_state  = rb_ary_new();
 
-         for(i = 0; i < msize; i++)
-            rb_ary_push(v_state, INT2FIX(infop.si_mstate[i]));
+      for(i = 0; i < msize; i++)
+        rb_ary_push(v_state, INT2FIX(args.infop.si_mstate[i]));
 #endif
 #ifdef HAVE_ST_SI_FADDR
-         v_addr   = INT2FIX(infop.si_faddr);
+      v_addr = INT2FIX(args.infop.si_faddr);
 #endif
 #ifdef HAVE_ST_SI_SYSCALL
-         v_syscall = INT2FIX(infop.si_syscall);
+      v_syscall = INT2FIX(args.infop.si_syscall);
 #endif
 #ifdef HAVE_ST_SI_NSYSARG
-         v_nsysarg = INT2FIX(infop.si_nsysarg);
+      v_nsysarg = INT2FIX(args.infop.si_nsysarg);
 #endif
 #ifdef HAVE_ST_SI_FAULT
-         v_fault   = INT2FIX(infop.si_fault);
+      v_fault   = INT2FIX(args.infop.si_fault);
 #endif
 #ifdef HAVE_ST_SI_TSTAMP
-         v_time = rb_time_new(infop.si_tstamp.tv_sec,infop.si_tstamp.tv_nsec);
+      v_time = rb_time_new(args.infop.si_tstamp.tv_sec, args.infop.si_tstamp.tv_nsec);
 #endif
-      }
+    }
 
 #ifdef SIGXRES
-      if(sig == SIGXRES){
-         v_entity = INT2FIX(infop.si_entity);
-      }
+    if(sig == SIGXRES){
+      v_entity = INT2FIX(args.infop.si_entity);
+    }
 #endif
 
-      v_last_status = rb_struct_new(v_siginfo_struct,
-         INT2FIX(infop.si_signo),   // Probably SIGCHLD
-         INT2FIX(infop.si_errno),   // 0 means no error
-         INT2FIX(infop.si_code),    // Should be anything but SI_NOINFO
-         INT2FIX(infop.si_pid),     // Real PID that sent the signal
-         INT2FIX(infop.si_uid),     // Real UID of process that sent signal
-         v_utime,
-         v_status,
-         v_stime,
+    v_last_status = rb_struct_new(v_siginfo_struct,
+      INT2FIX(args.infop.si_signo),   // Probably SIGCHLD
+      INT2FIX(args.infop.si_errno),   // 0 means no error
+      INT2FIX(args.infop.si_code),    // Should be anything but SI_NOINFO
+      INT2FIX(args.infop.si_pid),     // Real PID that sent the signal
+      INT2FIX(args.infop.si_uid),     // Real UID of process that sent signal
+      v_utime,
+      v_status,
+      v_stime,
 #ifdef HAVE_ST_SI_TRAPNO
-         v_trapno,
+      v_trapno,
 #endif
 #ifdef HAVE_ST_SI_PC
-         v_pc,
+      v_pc,
 #endif
 #ifdef HAVE_ST_SI_FD
-         v_fd,
+      v_fd,
 #endif
-         v_band,
+      v_band,
 #ifdef HAVE_ST_SI_FADDR
-         v_addr,
+      v_addr,
 #endif
 #ifdef HAVE_ST_SI_TSTAMP
-         v_time,
+      v_time,
 #endif
 #ifdef HAVE_ST_SI_SYSCALL
-         v_syscall,
+      v_syscall,
 #endif
 #ifdef HAVE_ST_SI_NSYSARG
-         v_nsysarg,
+      v_nsysarg,
 #endif
 #ifdef HAVE_ST_SI_FAULT
-         v_fault,
+      v_fault,
 #endif
 #ifdef HAVE_ST_SI_SYSARG
-         v_sysarg,
+      v_sysarg,
 #endif
 #ifdef HAVE_ST_SI_MSTATE
-         v_state,
+      v_state,
 #endif
-         v_entity
-      );
-   }
+      v_entity
+    );
+  }
 
-   return v_last_status;
+  return v_last_status;
 }
 #endif
 
