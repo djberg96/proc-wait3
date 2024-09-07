@@ -80,6 +80,13 @@ Returns a `Proc::SigInfo` struct and sets `$?`.
 
 Not supported on all platforms.
 
+### `Proc.getdtablesize`
+
+Returns the current soft limit of the maximum file descriptor number.
+
+This is effectively the same as calling Process.getrlimit with RLIMIT_NOFILE
+as the resource identifier.
+
 ## Standard Constants
 `Process::WAIT3_VERSION`
 
