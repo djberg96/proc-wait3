@@ -1,3 +1,16 @@
+/*
+ * proc-wait3 - Additional process waiting and resource usage functions for Ruby
+ *
+ * This file has been improved with:
+ * - Replaced deprecated bzero() with memset()
+ * - Added input validation using Check_Type()
+ * - Modernized Ruby API usage (RB_TYPE_P, RSTRING_PTR/LEN)
+ * - Reduced code duplication with helper functions
+ * - Improved error handling and null termination
+ * - Fixed typos in documentation
+ * - Consistent coding style
+ */
+
 #include <ruby.h>
 #include <string.h>
 #include <unistd.h>
@@ -30,18 +43,15 @@ VALUE v_last_status;
 VALUE v_procstat_struct, v_siginfo_struct, v_usage_struct;
 
 static void sigproc(int signum, siginfo_t* info, void* ucontext);
+static VALUE create_procstat_struct(pid_t pid, int status, const struct rusage* r);
 
 /*
  * Returns true if this process is stopped. This is only returned
- * returned if the corresponding wait() call had the WUNTRACED flag
- * set.
+ * if the corresponding wait() call had the WUNTRACED flag set.
  */
 static VALUE pst_wifstopped(int status)
 {
-   if(WIFSTOPPED(status))
-      return Qtrue;
-   else
-      return Qfalse;
+   return WIFSTOPPED(status) ? Qtrue : Qfalse;
 }
 
 /*
@@ -49,10 +59,7 @@ static VALUE pst_wifstopped(int status)
  */
 static VALUE pst_wifsignaled(int status)
 {
-  if (WIFSIGNALED(status))
-	  return Qtrue;
-  else
-    return Qfalse;
+  return WIFSIGNALED(status) ? Qtrue : Qfalse;
 }
 
 /*
@@ -61,10 +68,7 @@ static VALUE pst_wifsignaled(int status)
  */
 static VALUE pst_wifexited(int status)
 {
-  if (WIFEXITED(status))
-    return Qtrue;
-  else
-    return Qfalse;
+  return WIFEXITED(status) ? Qtrue : Qfalse;
 }
 
 /*
@@ -86,10 +90,7 @@ static VALUE pst_success_p(int status)
 static VALUE pst_wcoredump(int status)
 {
 #ifdef WCOREDUMP
-  if (WCOREDUMP(status))
-    return Qtrue;
-  else
-    return Qfalse;
+  return WCOREDUMP(status) ? Qtrue : Qfalse;
 #else
   return Qfalse;
 #endif
@@ -101,10 +102,7 @@ static VALUE pst_wcoredump(int status)
  */
 static VALUE pst_wexitstatus(int status)
 {
-  if (WIFEXITED(status))
-    return INT2NUM(WEXITSTATUS(status));
-
-  return Qnil;
+  return WIFEXITED(status) ? INT2NUM(WEXITSTATUS(status)) : Qnil;
 }
 
 /*
@@ -113,10 +111,7 @@ static VALUE pst_wexitstatus(int status)
  */
 static VALUE pst_wtermsig(int status)
 {
-  if (WIFSIGNALED(status))
-    return INT2NUM(WTERMSIG(status));
-
-  return Qnil;
+  return WIFSIGNALED(status) ? INT2NUM(WTERMSIG(status)) : Qnil;
 }
 
 /*
@@ -125,10 +120,42 @@ static VALUE pst_wtermsig(int status)
  */
 static VALUE pst_wstopsig(int status)
 {
-  if(WIFSTOPPED(status))
-    return INT2NUM(WSTOPSIG(status));
+  return WIFSTOPPED(status) ? INT2NUM(WSTOPSIG(status)) : Qnil;
+}
 
-  return Qnil;
+/*
+ * Helper function to create a ProcStat struct with rusage data
+ */
+static VALUE create_procstat_struct(pid_t pid, int status, const struct rusage* r)
+{
+   return rb_struct_new(v_procstat_struct,
+      INT2FIX(pid),
+      INT2FIX(status),
+      rb_float_new((double)r->ru_utime.tv_sec+(double)r->ru_utime.tv_usec/1e6),
+      rb_float_new((double)r->ru_stime.tv_sec+(double)r->ru_stime.tv_usec/1e6),
+      LONG2NUM(r->ru_maxrss),
+      LONG2NUM(r->ru_ixrss),
+      LONG2NUM(r->ru_idrss),
+      LONG2NUM(r->ru_isrss),
+      LONG2NUM(r->ru_minflt),
+      LONG2NUM(r->ru_majflt),
+      LONG2NUM(r->ru_nswap),
+      LONG2NUM(r->ru_inblock),
+      LONG2NUM(r->ru_oublock),
+      LONG2NUM(r->ru_msgsnd),
+      LONG2NUM(r->ru_msgrcv),
+      LONG2NUM(r->ru_nsignals),
+      LONG2NUM(r->ru_nvcsw),
+      LONG2NUM(r->ru_nivcsw),
+      pst_wifstopped(status),
+      pst_wifsignaled(status),
+      pst_wifexited(status),
+      pst_success_p(status),
+      pst_wcoredump(status),
+      pst_wexitstatus(status),
+      pst_wtermsig(status),
+      pst_wstopsig(status)
+   );
 }
 
 /*
@@ -150,45 +177,18 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
 
    rb_scan_args(argc,argv,"01",&v_flags);
 
-   if(Qnil != v_flags){
+   if(!NIL_P(v_flags)){
       flags = NUM2INT(v_flags);
    }
 
-   bzero(&r, sizeof(r));
+   memset(&r, 0, sizeof(r));
    pid = wait3(&status, flags, &r);
 
    if(pid < 0){
       rb_sys_fail("wait3");
    }
    else if(pid > 0){
-      v_last_status = rb_struct_new(v_procstat_struct,
-         INT2FIX(pid),
-         INT2FIX(status),
-         rb_float_new((double)r.ru_utime.tv_sec+(double)r.ru_utime.tv_usec/1e6),
-         rb_float_new((double)r.ru_stime.tv_sec+(double)r.ru_stime.tv_usec/1e6),
-         LONG2NUM(r.ru_maxrss),
-         LONG2NUM(r.ru_ixrss),
-         LONG2NUM(r.ru_idrss),
-         LONG2NUM(r.ru_isrss),
-         LONG2NUM(r.ru_minflt),
-         LONG2NUM(r.ru_majflt),
-         LONG2NUM(r.ru_nswap),
-         LONG2NUM(r.ru_inblock),
-         LONG2NUM(r.ru_oublock),
-         LONG2NUM(r.ru_msgsnd),
-         LONG2NUM(r.ru_msgrcv),
-         LONG2NUM(r.ru_nsignals),
-         LONG2NUM(r.ru_nvcsw),
-         LONG2NUM(r.ru_nivcsw),
-         pst_wifstopped(status),
-         pst_wifsignaled(status),
-         pst_wifexited(status),
-         pst_success_p(status),
-         pst_wcoredump(status),
-         pst_wexitstatus(status),
-         pst_wtermsig(status),
-         pst_wstopsig(status)
-      );
+      v_last_status = create_procstat_struct(pid, status, &r);
 
       rb_last_status_set(status, pid);
       OBJ_FREEZE(v_last_status);
@@ -222,46 +222,22 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
 
    rb_scan_args(argc, argv, "11", &v_pid, &v_flags);
 
+   Check_Type(v_pid, T_FIXNUM);
    pid = NUM2INT(v_pid);
 
-   if(RTEST(v_flags))
+   if(RTEST(v_flags)){
+      Check_Type(v_flags, T_FIXNUM);
       flags = NUM2INT(v_flags);
+   }
 
-   bzero(&r, sizeof(r));
+   memset(&r, 0, sizeof(r));
    pid = wait4(pid, &status, flags, &r);
 
    if(pid < 0){
       rb_sys_fail("wait4");
    }
    else if(pid > 0){
-      v_last_status = rb_struct_new(v_procstat_struct,
-         INT2FIX(pid),
-         INT2FIX(status),
-         rb_float_new((double)r.ru_utime.tv_sec+(double)r.ru_utime.tv_usec/1e6),
-         rb_float_new((double)r.ru_stime.tv_sec+(double)r.ru_stime.tv_usec/1e6),
-         LONG2NUM(r.ru_maxrss),
-         LONG2NUM(r.ru_ixrss),
-         LONG2NUM(r.ru_idrss),
-         LONG2NUM(r.ru_isrss),
-         LONG2NUM(r.ru_minflt),
-         LONG2NUM(r.ru_majflt),
-         LONG2NUM(r.ru_nswap),
-         LONG2NUM(r.ru_inblock),
-         LONG2NUM(r.ru_oublock),
-         LONG2NUM(r.ru_msgsnd),
-         LONG2NUM(r.ru_msgrcv),
-         LONG2NUM(r.ru_nsignals),
-         LONG2NUM(r.ru_nvcsw),
-         LONG2NUM(r.ru_nivcsw),
-         pst_wifstopped(status),
-         pst_wifsignaled(status),
-         pst_wifexited(status),
-         pst_success_p(status),
-         pst_wcoredump(status),
-         pst_wexitstatus(status),
-         pst_wtermsig(status),
-         pst_wstopsig(status)
-      );
+      v_last_status = create_procstat_struct(pid, status, &r);
 
       rb_last_status_set(status, pid);
       OBJ_FREEZE(v_last_status);
@@ -321,13 +297,18 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
 
    rb_scan_args(argc, argv, "12", &v_type, &v_id, &v_options);
 
+   Check_Type(v_type, T_FIXNUM);
    idtype = NUM2INT(v_type);
 
-   if(RTEST(v_id))
+   if(RTEST(v_id)){
+      Check_Type(v_id, T_FIXNUM);
       id = NUM2INT(v_id);
+   }
 
-   if(RTEST(v_options))
+   if(RTEST(v_options)){
+      Check_Type(v_options, T_FIXNUM);
       options = NUM2INT(v_options);
+   }
 
    /* The Linux man page for waitid() says to zero out the pid field and check
     * its value after the call to waitid() to detect if there were children in
@@ -589,21 +570,22 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
       int signum;
       struct sigaction act, sa;
 
-      bzero(&act, sizeof(act));
-      bzero(&sa, sizeof(sa));
+      memset(&act, 0, sizeof(act));
+      memset(&sa, 0, sizeof(sa));
 
       for(i = 0; i < len; i++){
          v_val = rb_ary_shift(v_signals);
 
-         if(TYPE(v_val) == T_STRING){
+         if(RB_TYPE_P(v_val, T_STRING)){
 #ifdef HAVE_STRLCPY
             if(strlcpy(signame, StringValuePtr(v_val), max) >= max)
                rb_raise(rb_eArgError, "string too large");
 #else
-            if(RSTRING(v_val)->len > max)
+            if(RSTRING_LEN(v_val) >= max)
                rb_raise(rb_eArgError, "string too large");
             else
-               strncpy(signame, RSTRING(v_val)->ptr, max);
+               strncpy(signame, RSTRING_PTR(v_val), max - 1);
+            signame[max - 1] = '\0';
 #endif
 
 #ifdef HAVE_STR2SIG
@@ -616,6 +598,7 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
 #endif
          }
          else{
+            Check_Type(v_val, T_FIXNUM);
             signum = NUM2INT(v_val);
          }
 
@@ -633,10 +616,16 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
 }
 
 /*
- * This is just a placeholder proc to prevent the "pause" method from exiting
- * the program if the appropriate signal is intercepted.
+ * Signal handler placeholder to prevent the "pause" method from exiting
+ * the program when the specified signal is intercepted.
+ * This is intentionally a no-op handler.
  */
-static void sigproc(int signum, siginfo_t* info, void* ucontext){ /* Do nothing */ }
+static void sigproc(int signum, siginfo_t* info, void* ucontext){
+   /* Intentionally empty - just prevents default signal handling */
+   (void)signum;    /* Suppress unused parameter warning */
+   (void)info;      /* Suppress unused parameter warning */
+   (void)ucontext;  /* Suppress unused parameter warning */
+}
 
 #ifdef HAVE_SIGSEND
 /*
@@ -685,11 +674,13 @@ static VALUE proc_sigsend(int argc, VALUE* argv, VALUE mod){
 
   rb_scan_args(argc, argv, "21", &v_type, &v_pid, &v_signal);
 
+  Check_Type(v_type, T_FIXNUM);
+  Check_Type(v_pid, T_FIXNUM);
   idtype = NUM2INT(v_type);
   id = NUM2INT(v_pid);
 
   if(!NIL_P(v_signal)){
-    if(TYPE(v_signal) == T_FIXNUM){
+    if(RB_TYPE_P(v_signal, T_FIXNUM)){
       sig = FIX2INT(v_signal);
     }
     else{
@@ -731,7 +722,7 @@ static VALUE proc_sigsend(int argc, VALUE* argv, VALUE mod){
  * * maxrss    - Maximum resident set size
  * * intrss    - Integral shared memory size
  * * idrss     - Integral unshared data size
- * * isrss     - Integral unshared statck size
+ * * isrss     - Integral unshared stack size
  * * minflt    - Minor page faults
  * * majflt    - Major page faults
  * * nswap     - Number of swaps
@@ -752,12 +743,12 @@ static VALUE proc_getrusage(int argc, VALUE* argv, VALUE mod){
 
   rb_scan_args(argc, argv, "01", &v_children);
 
-  if(TYPE(v_children) == T_FIXNUM)
+  if(RB_TYPE_P(v_children, T_FIXNUM))
     who = FIX2INT(v_children);
   else if(RTEST(v_children))
     who = RUSAGE_CHILDREN;
 
-  bzero(&r, sizeof(r));
+  memset(&r, 0, sizeof(r));
 
   if(getrusage(who,&r) == -1)
     rb_sys_fail("getrusage");
