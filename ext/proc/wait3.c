@@ -1,9 +1,7 @@
 #include <ruby.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <errno.h>
-#include <stdio.h>
 
 /* Debian */
 #ifdef HAVE_SYS_RESOURCE_H
@@ -805,13 +803,10 @@ static VALUE proc_getdtablesize(VALUE mod){
  *    Process.alive?(pid)
  *
  * Returns true if the process with the given +pid+ is alive, false otherwise.
- * This is more efficient than using Process.kill(0, pid) and doesn't have
- * the side effect of potentially sending a signal.
+ * This uses kill(pid, 0) which doesn't actually send a signal but checks
+ * if the process exists and we have permission to signal it.
  *
- * On Linux, this checks for the existence of /proc/pid. On other platforms,
- * it falls back to using kill(pid, 0) but handles the exceptions internally.
- *
- * Raises ArgumentError if +pid+ is not a valid integer.
+ * Raises TypeError if +pid+ is not a valid integer.
  */
 static VALUE proc_alive_p(VALUE mod, VALUE v_pid){
   pid_t pid;
@@ -823,20 +818,7 @@ static VALUE proc_alive_p(VALUE mod, VALUE v_pid){
     return Qfalse;
   }
 
-#ifdef __linux__
-  /* On Linux, check if /proc/pid exists - this is very efficient */
-  char proc_path[64];
-  struct stat st;
-
-  snprintf(proc_path, sizeof(proc_path), "/proc/%d", (int)pid);
-
-  if(stat(proc_path, &st) == 0) {
-    return Qtrue;
-  } else {
-    return Qfalse;
-  }
-#else
-  /* On other platforms, use kill(pid, 0) to test existence */
+  /* Use kill(pid, 0) to test process existence - works on all platforms */
   if(kill(pid, 0) == 0) {
     return Qtrue;
   } else {
@@ -847,7 +829,6 @@ static VALUE proc_alive_p(VALUE mod, VALUE v_pid){
       return Qtrue;   /* Process exists but we can't signal it (permission) */
     }
   }
-#endif
 }
 
 /*
