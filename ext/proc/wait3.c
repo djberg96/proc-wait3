@@ -619,7 +619,7 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
             signum = NUM2INT(v_val);
          }
 
-         memset(&act, 0, sizeof(act));
+         bzero(&act, sizeof(act));
          act.sa_flags = SA_SIGINFO;
          act.sa_sigaction = sigproc;
          res = sigaction(signum, &act, &sa);
