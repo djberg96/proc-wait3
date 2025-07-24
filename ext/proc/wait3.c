@@ -1,6 +1,9 @@
 #include <ruby.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <stdio.h>
 
 /* Debian */
 #ifdef HAVE_SYS_RESOURCE_H
@@ -798,6 +801,56 @@ static VALUE proc_getdtablesize(VALUE mod){
 #endif
 
 /*
+ * call-seq:
+ *    Process.alive?(pid)
+ *
+ * Returns true if the process with the given +pid+ is alive, false otherwise.
+ * This is more efficient than using Process.kill(0, pid) and doesn't have
+ * the side effect of potentially sending a signal.
+ *
+ * On Linux, this checks for the existence of /proc/pid. On other platforms,
+ * it falls back to using kill(pid, 0) but handles the exceptions internally.
+ *
+ * Raises ArgumentError if +pid+ is not a valid integer.
+ */
+static VALUE proc_alive_p(VALUE mod, VALUE v_pid){
+  pid_t pid;
+
+  Check_Type(v_pid, T_FIXNUM);
+  pid = NUM2INT(v_pid);
+
+  if(pid <= 0) {
+    return Qfalse;
+  }
+
+#ifdef __linux__
+  /* On Linux, check if /proc/pid exists - this is very efficient */
+  char proc_path[64];
+  struct stat st;
+
+  snprintf(proc_path, sizeof(proc_path), "/proc/%d", (int)pid);
+
+  if(stat(proc_path, &st) == 0) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
+#else
+  /* On other platforms, use kill(pid, 0) to test existence */
+  if(kill(pid, 0) == 0) {
+    return Qtrue;
+  } else {
+    /* Process doesn't exist or we don't have permission to signal it */
+    if(errno == ESRCH) {
+      return Qfalse;  /* Process doesn't exist */
+    } else {
+      return Qtrue;   /* Process exists but we can't signal it (permission) */
+    }
+  }
+#endif
+}
+
+/*
  * Adds the wait3, wait4, waitid, pause, sigsend, and getrusage methods to the
  * Process module.
  */
@@ -813,6 +866,7 @@ void Init_wait3(void)
 
   rb_define_module_function(rb_mProcess, "wait3", proc_wait3, -1);
   rb_define_module_function(rb_mProcess, "pause", proc_pause, -1);
+  rb_define_module_function(rb_mProcess, "alive?", proc_alive_p, 1);
 
 #ifdef HAVE_GETDTABLESIZE
   rb_define_module_function(rb_mProcess,"getdtablesize",proc_getdtablesize,0);

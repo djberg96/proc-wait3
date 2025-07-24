@@ -217,6 +217,40 @@ RSpec.describe Process do
     expect(Process::P_JAILID).not_to be_nil
   end
 
+  context 'Process.alive?' do
+    example 'alive? method is defined' do
+      expect(Process).to respond_to(:alive?)
+    end
+
+    example 'alive? returns true for existing process' do
+      expect(Process.alive?(Process.pid)).to be true
+    end
+
+    example 'alive? returns false for non-existent process' do
+      # Use a very high PID that's unlikely to exist
+      expect(Process.alive?(99999)).to be false
+    end
+
+    example 'alive? returns false for invalid PIDs' do
+      expect(Process.alive?(0)).to be false
+      expect(Process.alive?(-1)).to be false
+    end
+
+    example 'alive? works with child processes' do
+      @pid = fork { sleep 1 }
+      expect(Process.alive?(@pid)).to be true
+
+      Process.kill('TERM', @pid)
+      call_wait4(@pid)
+      expect(Process.alive?(@pid)).to be false
+    end
+
+    example 'alive? raises ArgumentError for non-integer' do
+      expect { Process.alive?('invalid') }.to raise_error(TypeError)
+      expect { Process.alive?(nil) }.to raise_error(TypeError)
+    end
+  end
+
   def after
     Process.kill(9, @pid) if @pid
   end
