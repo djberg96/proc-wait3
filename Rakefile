@@ -14,6 +14,7 @@ CLEAN.include(
   '**/*.lock',               # Gemfile.lock
   '**/Makefile',             # C Makefile
   '**/conftest.dSYM',        # OS X build directory
+  '**/wait3.bundle.dSYM',    # OS X build directory
   "**/*.#{CONFIG['DLEXT']}", # C shared object
   '**/*.lock'                # Bundler
 )
