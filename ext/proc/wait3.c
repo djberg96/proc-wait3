@@ -858,8 +858,17 @@ static VALUE proc_sigsend(int argc, VALUE* argv, VALUE mod){
       char signame[SIG2STR_MAX];
       unsigned int max = SIG2STR_MAX;
 
+#ifdef HAVE_STRLCPY
       if(strlcpy(signame, StringValuePtr(v_signal), max) >= max)
         rb_raise(rb_eArgError, "string too large");
+#else
+      if(RSTRING_LEN(v_signal) >= max)
+        rb_raise(rb_eArgError, "string too large");
+      else{
+        strncpy(signame, RSTRING_PTR(v_signal), max);
+        signame[max-1] = '\0';
+      }
+#endif
 
       if(str2sig(signame,&sig) != 0)
         rb_sys_fail("str2sig");
