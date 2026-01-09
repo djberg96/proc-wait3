@@ -258,7 +258,7 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
    VALUE scheduler = rb_fiber_scheduler_current();
    if (!NIL_P(scheduler)) {
       /* Use fiber scheduler - wait for any child (pid = -1) */
-      VALUE result = rb_fiber_scheduler_process_wait(scheduler, RB_INT2NUM(-1), RB_INT2NUM(flags));
+      VALUE result = rb_fiber_scheduler_process_wait(scheduler, (rb_pid_t)-1, flags);
 
       if (NIL_P(result)) {
          return Qnil;
@@ -357,7 +357,7 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
    VALUE scheduler = rb_fiber_scheduler_current();
    if (!NIL_P(scheduler)) {
       /* Use fiber scheduler */
-      VALUE result = rb_fiber_scheduler_process_wait(scheduler, RB_INT2NUM(pid), RB_INT2NUM(flags));
+      VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
 
       if (NIL_P(result)) {
          return Qnil;
