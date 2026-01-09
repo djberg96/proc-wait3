@@ -268,6 +268,8 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
       pid_t pid = NUM2PIDT(rb_funcall(result, rb_intern("pid"), 0));
       int status = NUM2INT(rb_funcall(result, rb_intern("to_i"), 0));
 
+      RB_GC_GUARD(result);
+
       v_last_status = build_procstat_without_rusage(pid, status);
       rb_last_status_set(status, pid);
       OBJ_FREEZE(v_last_status);
@@ -366,6 +368,8 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
       /* Extract pid and status from Process::Status object */
       pid_t rpid = NUM2PIDT(rb_funcall(result, rb_intern("pid"), 0));
       int status = NUM2INT(rb_funcall(result, rb_intern("to_i"), 0));
+
+      RB_GC_GUARD(result);
 
       v_last_status = build_procstat_without_rusage(rpid, status);
       rb_last_status_set(status, rpid);
@@ -783,6 +787,7 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
    {
       struct pause_args pargs;
       rb_thread_call_without_gvl(pause_without_gvl, &pargs, RUBY_UBF_PROCESS, NULL);
+      RB_GC_GUARD(v_signals);
       return INT2FIX(pargs.result); /* Should always be -1 */
    }
 }
