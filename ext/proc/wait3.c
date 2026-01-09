@@ -721,7 +721,7 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
  * be sure to leave off the leading 'SIG' substring, e.g. use 'INT' instead
  * of 'SIGINT'.
  *
- * Note that not all platforms (notably Linux) do not support automatically
+ * Note that not all platforms (notably Linux) support automatically
  * converting strings to their corresponding signal values, so it is
  * recommended that you always use an array of numeric values.
  *
