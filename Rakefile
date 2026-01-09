@@ -72,7 +72,7 @@ end
 
 desc 'Run the test suite'
 RSpec::Core::RakeTask.new(:spec) do |t|
-  t.rspec_opts = '-Iext -f documentation'
+  t.rspec_opts = '-Iext -f documentation -w'
 end
 
 # Clean up afterwards
