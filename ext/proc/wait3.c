@@ -755,10 +755,12 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
             if(strlcpy(signame, StringValuePtr(v_val), max) >= max)
                rb_raise(rb_eArgError, "string too large");
 #else
-            if(RSTRING(v_val)->len > max)
+            if(RSTRING_LEN(v_val) >= max)
                rb_raise(rb_eArgError, "string too large");
-            else
-               strncpy(signame, RSTRING(v_val)->ptr, max);
+            else{
+               strncpy(signame, RSTRING_PTR(v_val), max);
+               signame[max-1] = '\0';
+            }
 #endif
 
 #ifdef HAVE_STR2SIG
