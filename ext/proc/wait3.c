@@ -912,7 +912,7 @@ static VALUE proc_getrusage(int argc, VALUE* argv, VALUE mod){
   else if(RTEST(v_children))
     who = RUSAGE_CHILDREN;
 
-  memset(&r, 0, sizeof(r));
+  bzero(&r, sizeof(r));
 
   if(getrusage(who,&r) == -1)
     rb_sys_fail("getrusage");
