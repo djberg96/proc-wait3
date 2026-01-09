@@ -209,7 +209,7 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
 
    rb_scan_args(argc,argv,"01",&v_flags);
 
-   memset(&args, 0, sizeof(args));
+   bzero(&args, sizeof(args));
 
    if(Qnil != v_flags){
       args.flags = NUM2INT(v_flags);
@@ -279,7 +279,7 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
 
    rb_scan_args(argc, argv, "11", &v_pid, &v_flags);
 
-   memset(&args, 0, sizeof(args));
+   bzero(&args, sizeof(args));
    args.pid = NUM2INT(v_pid);
 
    if(RTEST(v_flags))
@@ -375,7 +375,7 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
 
    rb_scan_args(argc, argv, "12", &v_type, &v_id, &v_options);
 
-   memset(&args, 0, sizeof(args));
+   bzero(&args, sizeof(args));
    args.idtype = NUM2INT(v_type);
 
    if(RTEST(v_id))
@@ -646,8 +646,8 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
       int signum;
       struct sigaction act, sa;
 
-      memset(&act, 0, sizeof(act));
-      memset(&sa, 0, sizeof(sa));
+      bzero(&act, sizeof(act));
+      bzero(&sa, sizeof(sa));
 
       for(i = 0; i < len; i++){
          v_val = rb_ary_shift(v_signals);
@@ -676,7 +676,7 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
             signum = NUM2INT(v_val);
          }
 
-         memset(&act, 0, sizeof(act));
+         bzero(&act, sizeof(act));
          act.sa_flags = SA_SIGINFO;
          act.sa_sigaction = sigproc;
          res = sigaction(signum, &act, &sa);
