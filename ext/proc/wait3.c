@@ -1,5 +1,8 @@
 #include <ruby.h>
 #include <ruby/thread.h>
+#ifdef HAVE_RB_FIBER_SCHEDULER_CURRENT
+#include <ruby/fiber/scheduler.h>
+#endif
 #include <string.h>
 #include <unistd.h>
 
@@ -25,6 +28,11 @@
 
 #ifndef SIG2STR_MAX
 #define SIG2STR_MAX 32
+#endif
+
+/* NUM2PIDT may not be defined on older Ruby versions */
+#ifndef NUM2PIDT
+#define NUM2PIDT(v) ((pid_t)NUM2LONG(v))
 #endif
 
 VALUE v_last_status;
@@ -193,6 +201,44 @@ static VALUE pst_wstopsig(int status)
   return Qnil;
 }
 
+#ifdef HAVE_RB_FIBER_SCHEDULER_CURRENT
+/*
+ * Helper to build ProcStat struct from pid and status.
+ * Used by fiber scheduler path where rusage is not available.
+ * All rusage fields are set to 0.
+ */
+static VALUE build_procstat_without_rusage(pid_t pid, int status) {
+   return rb_struct_new(v_procstat_struct,
+      INT2FIX(pid),
+      INT2FIX(status),
+      rb_float_new(0.0),  /* utime - not available via fiber scheduler */
+      rb_float_new(0.0),  /* stime - not available via fiber scheduler */
+      LONG2NUM(0),        /* maxrss */
+      LONG2NUM(0),        /* ixrss */
+      LONG2NUM(0),        /* idrss */
+      LONG2NUM(0),        /* isrss */
+      LONG2NUM(0),        /* minflt */
+      LONG2NUM(0),        /* majflt */
+      LONG2NUM(0),        /* nswap */
+      LONG2NUM(0),        /* inblock */
+      LONG2NUM(0),        /* oublock */
+      LONG2NUM(0),        /* msgsnd */
+      LONG2NUM(0),        /* msgrcv */
+      LONG2NUM(0),        /* nsignals */
+      LONG2NUM(0),        /* nvcsw */
+      LONG2NUM(0),        /* nivcsw */
+      pst_wifstopped(status),
+      pst_wifsignaled(status),
+      pst_wifexited(status),
+      pst_success_p(status),
+      pst_wcoredump(status),
+      pst_wexitstatus(status),
+      pst_wtermsig(status),
+      pst_wstopsig(status)
+   );
+}
+#endif
+
 /*
  * call-seq:
  *    Process.wait3(flags=nil)
@@ -202,18 +248,47 @@ static VALUE pst_wstopsig(int status)
  *
  * The return value is a ProcStat structure. The special global $? is also
  * set. Raises a SystemError if there are no child processes.
+ *
+ * Note: When a fiber scheduler is active (Ruby 3.0+), this method will
+ * cooperate with the scheduler. However, rusage information will not be
+ * available and those fields will be set to 0 in the returned struct.
  */
 static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
    struct wait3_args args;
    VALUE v_flags = Qnil;
+   int flags = 0;
 
    rb_scan_args(argc,argv,"01",&v_flags);
 
-   bzero(&args, sizeof(args));
-
    if(Qnil != v_flags){
-      args.flags = NUM2INT(v_flags);
+      flags = NUM2INT(v_flags);
    }
+
+#ifdef HAVE_RB_FIBER_SCHEDULER_CURRENT
+   VALUE scheduler = rb_fiber_scheduler_current();
+   if (!NIL_P(scheduler)) {
+      /* Use fiber scheduler - wait for any child (pid = -1) */
+      VALUE result = rb_fiber_scheduler_process_wait(scheduler, RB_INT2NUM(-1), RB_INT2NUM(flags));
+
+      if (NIL_P(result)) {
+         return Qnil;
+      }
+
+      /* Extract pid and status from Process::Status object */
+      pid_t pid = NUM2PIDT(rb_funcall(result, rb_intern("pid"), 0));
+      int status = NUM2INT(rb_funcall(result, rb_intern("to_i"), 0));
+
+      v_last_status = build_procstat_without_rusage(pid, status);
+      rb_last_status_set(status, pid);
+      OBJ_FREEZE(v_last_status);
+
+      return v_last_status;
+   }
+#endif
+
+   /* No fiber scheduler - use thread-based blocking */
+   bzero(&args, sizeof(args));
+   args.flags = flags;
 
    rb_thread_call_without_gvl(wait3_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
 
@@ -271,19 +346,51 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
  * This method is not supported on all platforms.
  *
  * Some +flags+ are not supported on all platforms.
+ *
+ * Note: When a fiber scheduler is active (Ruby 3.0+), this method will
+ * cooperate with the scheduler. However, rusage information will not be
+ * available and those fields will be set to 0 in the returned struct.
  */
 static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
    struct wait4_args args;
    VALUE v_pid;
    VALUE v_flags = Qnil;
+   pid_t pid;
+   int flags = 0;
 
    rb_scan_args(argc, argv, "11", &v_pid, &v_flags);
 
-   bzero(&args, sizeof(args));
-   args.pid = NUM2INT(v_pid);
+   pid = NUM2PIDT(v_pid);
 
    if(RTEST(v_flags))
-      args.flags = NUM2INT(v_flags);
+      flags = NUM2INT(v_flags);
+
+#ifdef HAVE_RB_FIBER_SCHEDULER_CURRENT
+   VALUE scheduler = rb_fiber_scheduler_current();
+   if (!NIL_P(scheduler)) {
+      /* Use fiber scheduler */
+      VALUE result = rb_fiber_scheduler_process_wait(scheduler, RB_INT2NUM(pid), RB_INT2NUM(flags));
+
+      if (NIL_P(result)) {
+         return Qnil;
+      }
+
+      /* Extract pid and status from Process::Status object */
+      pid_t rpid = NUM2PIDT(rb_funcall(result, rb_intern("pid"), 0));
+      int status = NUM2INT(rb_funcall(result, rb_intern("to_i"), 0));
+
+      v_last_status = build_procstat_without_rusage(rpid, status);
+      rb_last_status_set(status, rpid);
+      OBJ_FREEZE(v_last_status);
+
+      return v_last_status;
+   }
+#endif
+
+   /* No fiber scheduler - use thread-based blocking */
+   bzero(&args, sizeof(args));
+   args.pid = pid;
+   args.flags = flags;
 
    rb_thread_call_without_gvl(wait4_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
 
