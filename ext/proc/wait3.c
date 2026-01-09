@@ -101,10 +101,10 @@ static void* pause_without_gvl(void* data) {
  */
 static VALUE pst_wifstopped(int status)
 {
-   if(WIFSTOPPED(status))
-      return Qtrue;
-   else
-      return Qfalse;
+  if(WIFSTOPPED(status))
+    return Qtrue;
+  else
+    return Qfalse;
 }
 
 /*
@@ -113,7 +113,7 @@ static VALUE pst_wifstopped(int status)
 static VALUE pst_wifsignaled(int status)
 {
   if (WIFSIGNALED(status))
-	  return Qtrue;
+    return Qtrue;
   else
     return Qfalse;
 }
@@ -782,7 +782,7 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
          res = sigaction(signum, &act, &sa);
 
          if(res)
-          rb_sys_fail("sigaction");
+            rb_sys_fail("sigaction");
       }
    }
 
