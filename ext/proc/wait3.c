@@ -1,8 +1,6 @@
 #include <ruby.h>
 #include <ruby/thread.h>
-#ifdef HAVE_RB_FIBER_SCHEDULER_CURRENT
 #include <ruby/fiber/scheduler.h>
-#endif
 #include <string.h>
 #include <unistd.h>
 
@@ -28,11 +26,6 @@
 
 #ifndef SIG2STR_MAX
 #define SIG2STR_MAX 32
-#endif
-
-/* NUM2PIDT may not be defined on older Ruby versions */
-#ifndef NUM2PIDT
-#define NUM2PIDT(v) ((pid_t)NUM2LONG(v))
 #endif
 
 VALUE v_last_status;
@@ -201,7 +194,6 @@ static VALUE pst_wstopsig(int status)
   return Qnil;
 }
 
-#ifdef HAVE_RB_FIBER_SCHEDULER_CURRENT
 /*
  * Helper to build ProcStat struct from pid and status.
  * Used by fiber scheduler path where rusage is not available.
@@ -237,7 +229,6 @@ static VALUE build_procstat_without_rusage(pid_t pid, int status) {
       pst_wstopsig(status)
    );
 }
-#endif
 
 /*
  * call-seq:
@@ -264,7 +255,6 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
       flags = NUM2INT(v_flags);
    }
 
-#ifdef HAVE_RB_FIBER_SCHEDULER_CURRENT
    VALUE scheduler = rb_fiber_scheduler_current();
    if (!NIL_P(scheduler)) {
       /* Use fiber scheduler - wait for any child (pid = -1) */
@@ -284,7 +274,6 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
 
       return v_last_status;
    }
-#endif
 
    /* No fiber scheduler - use thread-based blocking */
    bzero(&args, sizeof(args));
@@ -365,7 +354,6 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
    if(RTEST(v_flags))
       flags = NUM2INT(v_flags);
 
-#ifdef HAVE_RB_FIBER_SCHEDULER_CURRENT
    VALUE scheduler = rb_fiber_scheduler_current();
    if (!NIL_P(scheduler)) {
       /* Use fiber scheduler */
@@ -385,7 +373,6 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
 
       return v_last_status;
    }
-#endif
 
    /* No fiber scheduler - use thread-based blocking */
    bzero(&args, sizeof(args));

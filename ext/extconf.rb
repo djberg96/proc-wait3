@@ -70,9 +70,6 @@ have_const('P_TASKID', 'signal.h')
 # RUSAGE_THREAD is Linux-specific
 have_const('RUSAGE_THREAD', 'sys/resource.h')
 
-# Fiber scheduler support (Ruby 3.0+)
-have_func('rb_fiber_scheduler_current', 'ruby.h')
-
 # BSD
 have_const('P_JAILID', 'sys/wait.h')
 
