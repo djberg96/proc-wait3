@@ -1,3 +1,16 @@
+## 2.0.0 - 9-Jan-2026
+* Added fiber scheduler support for wait3 and wait4 methods, allowing them
+  to cooperate with Ruby's fiber scheduler for non-blocking async operations.
+  Note that rusage fields will be zero when using the fiber scheduler path.
+* Added `rb_thread_call_without_gvl` for blocking calls so that other Ruby
+  threads can run while waiting.
+* Added `RB_GC_GUARD` to protect Ruby objects during blocking operations.
+* Replaced deprecated `RSTRING()->len` and `RSTRING()->ptr` with `RSTRING_LEN()`
+  and `RSTRING_PTR()` macros.
+* Added missing `HAVE_STRLCPY` guard in sigsend with strncpy fallback.
+* Fixed some minor whitespace inconsistencies.
+* Now requires Ruby 3.1 or later.
+
 ## 1.9.3 - 4-May-2024
 * Some internal refactoring where I bzero C structs before using them.
 
@@ -157,7 +170,7 @@
 * Updated tests and documentation.
 
 ## 1.2.0 - 7-Feb-2005
-* Added the Proc.waitid method (for those platforms that support it). 
+* Added the Proc.waitid method (for those platforms that support it).
 * Made the wait3.c file more rdoc friendly.
 * Added a test_waitid.rb file in the examples directory.
 
