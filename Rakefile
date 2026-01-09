@@ -7,15 +7,15 @@ require 'rbconfig'
 include RbConfig
 
 CLEAN.include(
-  '**/*.gem',                # Gem files
-  '**/*.rbc',                # Rubinius
-  '**/*.o',                  # C object file
-  '**/*.log',                # Ruby extension build log
-  '**/*.lock',               # Gemfile.lock
-  '**/Makefile',             # C Makefile
-  '**/conftest.dSYM',        # OS X build directory
-  "**/*.#{CONFIG['DLEXT']}", # C shared object
-  '**/*.lock'                # Bundler
+  '**/*.gem',                 # Gem files
+  '**/*.rbc',                 # Rubinius
+  '**/*.o',                   # C object file
+  '**/*.log',                 # Ruby extension build log
+  '**/*.lock',                # Gemfile.lock
+  '**/Makefile',              # C Makefile
+  '**/*.dSYM',                # OS X build directory
+  "**/*.#{CONFIG['DLEXT']}",  # C shared object
+  '**/*.lock'                 # Bundler
 )
 
 desc "Build the source (but don't install it)"
