@@ -3,6 +3,7 @@
 #include <ruby/fiber/scheduler.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 /* Debian */
 #ifdef HAVE_SYS_RESOURCE_H
@@ -281,7 +282,14 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
    bzero(&args, sizeof(args));
    args.flags = flags;
 
-   rb_thread_call_without_gvl(wait3_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+   /* Retry on EINTR. The RUBY_UBF_PROCESS unblocking function sends a signal
+    * to interrupt the blocking call. On macOS (and some other platforms),
+    * wait3() is not automatically restarted after being interrupted, so we
+    * must retry manually.
+    */
+   do {
+      rb_thread_call_without_gvl(wait3_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+   } while(args.pid < 0 && errno == EINTR);
 
    if(args.pid < 0){
       rb_sys_fail("wait3");
@@ -383,7 +391,14 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
    args.pid = pid;
    args.flags = flags;
 
-   rb_thread_call_without_gvl(wait4_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+   /* Retry on EINTR. The RUBY_UBF_PROCESS unblocking function sends a signal
+    * to interrupt the blocking call. On macOS (and some other platforms),
+    * wait4() is not automatically restarted after being interrupted, so we
+    * must retry manually.
+    */
+   do {
+      rb_thread_call_without_gvl(wait4_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+   } while(args.result < 0 && errno == EINTR);
 
    if(args.result < 0){
       rb_sys_fail("wait4");
@@ -491,7 +506,14 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
    args.infop.si_pid = 0;
 #endif
 
-   rb_thread_call_without_gvl(waitid_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+   /* Retry on EINTR. The RUBY_UBF_PROCESS unblocking function sends a signal
+    * to interrupt the blocking call. On macOS (and some other platforms),
+    * waitid() is not automatically restarted after being interrupted, so we
+    * must retry manually.
+    */
+   do {
+      rb_thread_call_without_gvl(waitid_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+   } while(args.result == -1 && errno == EINTR);
 
    if(args.result == -1)
       rb_sys_fail("waitid");
