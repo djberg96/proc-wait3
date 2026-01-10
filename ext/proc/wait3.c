@@ -1,4 +1,6 @@
 #include <ruby.h>
+#include <ruby/thread.h>
+#include <ruby/fiber/scheduler.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -31,6 +33,67 @@ VALUE v_procstat_struct, v_siginfo_struct, v_usage_struct;
 
 static void sigproc(int signum, siginfo_t* info, void* ucontext);
 
+/* Structs for rb_thread_call_without_gvl wrappers */
+struct wait3_args {
+   int status;
+   int flags;
+   struct rusage rusage;
+   pid_t pid;
+};
+
+#ifdef HAVE_WAIT4
+struct wait4_args {
+   pid_t pid;
+   int status;
+   int flags;
+   struct rusage rusage;
+   pid_t result;
+};
+#endif
+
+#ifdef HAVE_WAITID
+struct waitid_args {
+   idtype_t idtype;
+   id_t id;
+   siginfo_t infop;
+   int options;
+   int result;
+};
+#endif
+
+struct pause_args {
+   int result;
+};
+
+/* GVL-free wrapper functions */
+static void* wait3_without_gvl(void* data) {
+   struct wait3_args* args = (struct wait3_args*)data;
+   args->pid = wait3(&args->status, args->flags, &args->rusage);
+   return NULL;
+}
+
+#ifdef HAVE_WAIT4
+static void* wait4_without_gvl(void* data) {
+   struct wait4_args* args = (struct wait4_args*)data;
+   args->result = wait4(args->pid, &args->status, args->flags, &args->rusage);
+   return NULL;
+}
+#endif
+
+#ifdef HAVE_WAITID
+static void* waitid_without_gvl(void* data) {
+   struct waitid_args* args = (struct waitid_args*)data;
+   args->result = waitid(args->idtype, args->id, &args->infop, args->options);
+   return NULL;
+}
+#endif
+
+static void* pause_without_gvl(void* data) {
+   struct pause_args* args = (struct pause_args*)data;
+   args->result = pause();
+   return NULL;
+}
+
 /*
  * Returns true if this process is stopped. This is only returned
  * returned if the corresponding wait() call had the WUNTRACED flag
@@ -38,10 +101,10 @@ static void sigproc(int signum, siginfo_t* info, void* ucontext);
  */
 static VALUE pst_wifstopped(int status)
 {
-   if(WIFSTOPPED(status))
-      return Qtrue;
-   else
-      return Qfalse;
+  if(WIFSTOPPED(status))
+    return Qtrue;
+  else
+    return Qfalse;
 }
 
 /*
@@ -50,7 +113,7 @@ static VALUE pst_wifstopped(int status)
 static VALUE pst_wifsignaled(int status)
 {
   if (WIFSIGNALED(status))
-	  return Qtrue;
+    return Qtrue;
   else
     return Qfalse;
 }
@@ -132,6 +195,42 @@ static VALUE pst_wstopsig(int status)
 }
 
 /*
+ * Helper to build ProcStat struct from pid and status.
+ * Used by fiber scheduler path where rusage is not available.
+ * All rusage fields are set to 0.
+ */
+static VALUE build_procstat_without_rusage(pid_t pid, int status) {
+   return rb_struct_new(v_procstat_struct,
+      INT2FIX(pid),
+      INT2FIX(status),
+      rb_float_new(0.0),  /* utime - not available via fiber scheduler */
+      rb_float_new(0.0),  /* stime - not available via fiber scheduler */
+      LONG2NUM(0),        /* maxrss */
+      LONG2NUM(0),        /* ixrss */
+      LONG2NUM(0),        /* idrss */
+      LONG2NUM(0),        /* isrss */
+      LONG2NUM(0),        /* minflt */
+      LONG2NUM(0),        /* majflt */
+      LONG2NUM(0),        /* nswap */
+      LONG2NUM(0),        /* inblock */
+      LONG2NUM(0),        /* oublock */
+      LONG2NUM(0),        /* msgsnd */
+      LONG2NUM(0),        /* msgrcv */
+      LONG2NUM(0),        /* nsignals */
+      LONG2NUM(0),        /* nvcsw */
+      LONG2NUM(0),        /* nivcsw */
+      pst_wifstopped(status),
+      pst_wifsignaled(status),
+      pst_wifexited(status),
+      pst_success_p(status),
+      pst_wcoredump(status),
+      pst_wexitstatus(status),
+      pst_wtermsig(status),
+      pst_wstopsig(status)
+   );
+}
+
+/*
  * call-seq:
  *    Process.wait3(flags=nil)
  *
@@ -140,13 +239,15 @@ static VALUE pst_wstopsig(int status)
  *
  * The return value is a ProcStat structure. The special global $? is also
  * set. Raises a SystemError if there are no child processes.
+ *
+ * Note: When a fiber scheduler is active (Ruby 3.0+), this method will
+ * cooperate with the scheduler. However, rusage information will not be
+ * available and those fields will be set to 0 in the returned struct.
  */
 static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
-   int status;
-   int flags = 0;
-   struct rusage r;
-   pid_t pid;
+   struct wait3_args args;
    VALUE v_flags = Qnil;
+   int flags = 0;
 
    rb_scan_args(argc,argv,"01",&v_flags);
 
@@ -154,43 +255,68 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
       flags = NUM2INT(v_flags);
    }
 
-   bzero(&r, sizeof(r));
-   pid = wait3(&status, flags, &r);
+   VALUE scheduler = rb_fiber_scheduler_current();
+   if (!NIL_P(scheduler)) {
+      /* Use fiber scheduler - wait for any child (pid = -1) */
+      VALUE result = rb_fiber_scheduler_process_wait(scheduler, (rb_pid_t)-1, flags);
 
-   if(pid < 0){
+      if (NIL_P(result)) {
+         return Qnil;
+      }
+
+      /* Extract pid and status from Process::Status object */
+      pid_t pid = NUM2PIDT(rb_funcall(result, rb_intern("pid"), 0));
+      int status = NUM2INT(rb_funcall(result, rb_intern("to_i"), 0));
+
+      RB_GC_GUARD(result);
+
+      v_last_status = build_procstat_without_rusage(pid, status);
+      rb_last_status_set(status, pid);
+      OBJ_FREEZE(v_last_status);
+
+      return v_last_status;
+   }
+
+   /* No fiber scheduler - use thread-based blocking */
+   bzero(&args, sizeof(args));
+   args.flags = flags;
+
+   rb_thread_call_without_gvl(wait3_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+
+   if(args.pid < 0){
       rb_sys_fail("wait3");
    }
-   else if(pid > 0){
+   else if(args.pid > 0){
       v_last_status = rb_struct_new(v_procstat_struct,
-         INT2FIX(pid),
-         INT2FIX(status),
-         rb_float_new((double)r.ru_utime.tv_sec+(double)r.ru_utime.tv_usec/1e6),
-         rb_float_new((double)r.ru_stime.tv_sec+(double)r.ru_stime.tv_usec/1e6),
-         LONG2NUM(r.ru_maxrss),
-         LONG2NUM(r.ru_ixrss),
-         LONG2NUM(r.ru_idrss),
-         LONG2NUM(r.ru_isrss),
-         LONG2NUM(r.ru_minflt),
-         LONG2NUM(r.ru_majflt),
-         LONG2NUM(r.ru_nswap),
-         LONG2NUM(r.ru_inblock),
-         LONG2NUM(r.ru_oublock),
-         LONG2NUM(r.ru_msgsnd),
-         LONG2NUM(r.ru_msgrcv),
-         LONG2NUM(r.ru_nsignals),
-         LONG2NUM(r.ru_nvcsw),
-         LONG2NUM(r.ru_nivcsw),
-         pst_wifstopped(status),
-         pst_wifsignaled(status),
-         pst_wifexited(status),
-         pst_success_p(status),
-         pst_wcoredump(status),
-         pst_wexitstatus(status),
-         pst_wtermsig(status),
-         pst_wstopsig(status)
+         INT2FIX(args.pid),
+         INT2FIX(args.status),
+         rb_float_new((double)args.rusage.ru_utime.tv_sec+(double)args.rusage.ru_utime.tv_usec/1e6),
+         rb_float_new((double)args.rusage.ru_stime.tv_sec+(double)args.rusage.ru_stime.tv_usec/1e6),
+         LONG2NUM(args.rusage.ru_maxrss),
+         LONG2NUM(args.rusage.ru_ixrss),
+         LONG2NUM(args.rusage.ru_idrss),
+         LONG2NUM(args.rusage.ru_isrss),
+         LONG2NUM(args.rusage.ru_minflt),
+         LONG2NUM(args.rusage.ru_majflt),
+         LONG2NUM(args.rusage.ru_nswap),
+         LONG2NUM(args.rusage.ru_inblock),
+         LONG2NUM(args.rusage.ru_oublock),
+         LONG2NUM(args.rusage.ru_msgsnd),
+         LONG2NUM(args.rusage.ru_msgrcv),
+         LONG2NUM(args.rusage.ru_nsignals),
+         LONG2NUM(args.rusage.ru_nvcsw),
+         LONG2NUM(args.rusage.ru_nivcsw),
+         pst_wifstopped(args.status),
+         pst_wifsignaled(args.status),
+         pst_wifexited(args.status),
+         pst_success_p(args.status),
+         pst_wcoredump(args.status),
+         pst_wexitstatus(args.status),
+         pst_wtermsig(args.status),
+         pst_wstopsig(args.status)
       );
 
-      rb_last_status_set(status, pid);
+      rb_last_status_set(args.status, args.pid);
       OBJ_FREEZE(v_last_status);
 
       return v_last_status;
@@ -211,59 +337,88 @@ static VALUE proc_wait3(int argc, VALUE *argv, VALUE mod){
  * This method is not supported on all platforms.
  *
  * Some +flags+ are not supported on all platforms.
+ *
+ * Note: When a fiber scheduler is active (Ruby 3.0+), this method will
+ * cooperate with the scheduler. However, rusage information will not be
+ * available and those fields will be set to 0 in the returned struct.
  */
 static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
-   int status;
-   int flags = 0;
-   struct rusage r;
-   pid_t pid;
+   struct wait4_args args;
    VALUE v_pid;
    VALUE v_flags = Qnil;
+   pid_t pid;
+   int flags = 0;
 
    rb_scan_args(argc, argv, "11", &v_pid, &v_flags);
 
-   pid = NUM2INT(v_pid);
+   pid = NUM2PIDT(v_pid);
 
    if(RTEST(v_flags))
       flags = NUM2INT(v_flags);
 
-   bzero(&r, sizeof(r));
-   pid = wait4(pid, &status, flags, &r);
+   VALUE scheduler = rb_fiber_scheduler_current();
+   if (!NIL_P(scheduler)) {
+      /* Use fiber scheduler */
+      VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
 
-   if(pid < 0){
+      if (NIL_P(result)) {
+         return Qnil;
+      }
+
+      /* Extract pid and status from Process::Status object */
+      pid_t rpid = NUM2PIDT(rb_funcall(result, rb_intern("pid"), 0));
+      int status = NUM2INT(rb_funcall(result, rb_intern("to_i"), 0));
+
+      RB_GC_GUARD(result);
+
+      v_last_status = build_procstat_without_rusage(rpid, status);
+      rb_last_status_set(status, rpid);
+      OBJ_FREEZE(v_last_status);
+
+      return v_last_status;
+   }
+
+   /* No fiber scheduler - use thread-based blocking */
+   bzero(&args, sizeof(args));
+   args.pid = pid;
+   args.flags = flags;
+
+   rb_thread_call_without_gvl(wait4_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+
+   if(args.result < 0){
       rb_sys_fail("wait4");
    }
-   else if(pid > 0){
+   else if(args.result > 0){
       v_last_status = rb_struct_new(v_procstat_struct,
-         INT2FIX(pid),
-         INT2FIX(status),
-         rb_float_new((double)r.ru_utime.tv_sec+(double)r.ru_utime.tv_usec/1e6),
-         rb_float_new((double)r.ru_stime.tv_sec+(double)r.ru_stime.tv_usec/1e6),
-         LONG2NUM(r.ru_maxrss),
-         LONG2NUM(r.ru_ixrss),
-         LONG2NUM(r.ru_idrss),
-         LONG2NUM(r.ru_isrss),
-         LONG2NUM(r.ru_minflt),
-         LONG2NUM(r.ru_majflt),
-         LONG2NUM(r.ru_nswap),
-         LONG2NUM(r.ru_inblock),
-         LONG2NUM(r.ru_oublock),
-         LONG2NUM(r.ru_msgsnd),
-         LONG2NUM(r.ru_msgrcv),
-         LONG2NUM(r.ru_nsignals),
-         LONG2NUM(r.ru_nvcsw),
-         LONG2NUM(r.ru_nivcsw),
-         pst_wifstopped(status),
-         pst_wifsignaled(status),
-         pst_wifexited(status),
-         pst_success_p(status),
-         pst_wcoredump(status),
-         pst_wexitstatus(status),
-         pst_wtermsig(status),
-         pst_wstopsig(status)
+         INT2FIX(args.result),
+         INT2FIX(args.status),
+         rb_float_new((double)args.rusage.ru_utime.tv_sec+(double)args.rusage.ru_utime.tv_usec/1e6),
+         rb_float_new((double)args.rusage.ru_stime.tv_sec+(double)args.rusage.ru_stime.tv_usec/1e6),
+         LONG2NUM(args.rusage.ru_maxrss),
+         LONG2NUM(args.rusage.ru_ixrss),
+         LONG2NUM(args.rusage.ru_idrss),
+         LONG2NUM(args.rusage.ru_isrss),
+         LONG2NUM(args.rusage.ru_minflt),
+         LONG2NUM(args.rusage.ru_majflt),
+         LONG2NUM(args.rusage.ru_nswap),
+         LONG2NUM(args.rusage.ru_inblock),
+         LONG2NUM(args.rusage.ru_oublock),
+         LONG2NUM(args.rusage.ru_msgsnd),
+         LONG2NUM(args.rusage.ru_msgrcv),
+         LONG2NUM(args.rusage.ru_nsignals),
+         LONG2NUM(args.rusage.ru_nvcsw),
+         LONG2NUM(args.rusage.ru_nivcsw),
+         pst_wifstopped(args.status),
+         pst_wifsignaled(args.status),
+         pst_wifexited(args.status),
+         pst_success_p(args.status),
+         pst_wcoredump(args.status),
+         pst_wexitstatus(args.status),
+         pst_wtermsig(args.status),
+         pst_wstopsig(args.status)
       );
 
-      rb_last_status_set(status, pid);
+      rb_last_status_set(args.status, args.result);
       OBJ_FREEZE(v_last_status);
 
       return v_last_status;
@@ -314,20 +469,18 @@ static VALUE proc_wait4(int argc, VALUE *argv, VALUE mod){
  */
 static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
    VALUE v_type, v_id, v_options;
-   siginfo_t infop;
-   idtype_t idtype;
-   id_t id = 0;
-   int options = 0;
+   struct waitid_args args;
 
    rb_scan_args(argc, argv, "12", &v_type, &v_id, &v_options);
 
-   idtype = NUM2INT(v_type);
+   bzero(&args, sizeof(args));
+   args.idtype = NUM2INT(v_type);
 
    if(RTEST(v_id))
-      id = NUM2INT(v_id);
+      args.id = NUM2INT(v_id);
 
    if(RTEST(v_options))
-      options = NUM2INT(v_options);
+      args.options = NUM2INT(v_options);
 
    /* The Linux man page for waitid() says to zero out the pid field and check
     * its value after the call to waitid() to detect if there were children in
@@ -335,10 +488,12 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
     * simply check the infop.si_signo struct member against SI_NOINFO.
     */
 #ifndef SI_NOINFO
-   infop.si_pid = 0;
+   args.infop.si_pid = 0;
 #endif
 
-   if(waitid(idtype, id, &infop, options) == -1)
+   rb_thread_call_without_gvl(waitid_without_gvl, &args, RUBY_UBF_PROCESS, NULL);
+
+   if(args.result == -1)
       rb_sys_fail("waitid");
 
     /* If the si_code struct member returns SI_NOINFO, or the si_pid member
@@ -352,13 +507,13 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
      */
 
 #ifdef SI_NOINFO
-   if(infop.si_code == SI_NOINFO){
+   if(args.infop.si_code == SI_NOINFO){
 #else
-   if(infop.si_pid == 0){
+   if(args.infop.si_pid == 0){
 #endif
       v_last_status = rb_struct_new(v_siginfo_struct,
-         INT2FIX(infop.si_signo),
-         INT2FIX(infop.si_errno),
+         INT2FIX(args.infop.si_signo),
+         INT2FIX(args.infop.si_errno),
          Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, /* code, pid, uid, utime, status, stime */
 #ifdef HAVE_ST_SI_TRAPNO
          Qnil,
@@ -424,8 +579,8 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
       VALUE v_state = Qnil;
 #endif
       VALUE v_band = Qnil, v_entity = Qnil;
-      int sig = infop.si_signo;
-      int code = infop.si_code;
+      int sig = args.infop.si_signo;
+      int code = args.infop.si_code;
 
 #if defined(HAVE_ST_SI_SYSARG) || defined(HAVE_ST_SI_MSTATE)
       int i = 0;
@@ -437,13 +592,13 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
        */
       if(sig == SIGCHLD){
 #ifdef HAVE_ST_SI_UTIME
-         v_utime  = ULL2NUM(infop.si_utime);
+         v_utime  = ULL2NUM(args.infop.si_utime);
 #endif
 #ifdef HAVE_ST_SI_STATUS
-         v_status = ULL2NUM(infop.si_status);
+         v_status = ULL2NUM(args.infop.si_status);
 #endif
 #ifdef HAVE_ST_SI_STIME
-         v_stime  = ULL2NUM(infop.si_stime);
+         v_stime  = ULL2NUM(args.infop.si_stime);
 #endif
       }
 
@@ -451,66 +606,66 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
          sig == SIGTRAP)
       {
 #ifdef HAVE_ST_SI_TRAPNO
-         v_trapno = INT2FIX(infop.si_trapno);
+         v_trapno = INT2FIX(args.infop.si_trapno);
 #endif
 #ifdef HAVE_ST_SI_PC
-         v_pc = INT2FIX(infop.si_pc);
+         v_pc = INT2FIX(args.infop.si_pc);
 #endif
       }
 
       if(sig == SIGXFSZ){
 #ifdef HAVE_ST_SI_FD
-         v_fd = INT2FIX(infop.si_fd);
+         v_fd = INT2FIX(args.infop.si_fd);
 #endif
          if(code == POLL_IN || code == POLL_OUT || code == POLL_MSG){
-            v_band = LONG2FIX(infop.si_band);
+            v_band = LONG2FIX(args.infop.si_band);
          }
       }
 
       if(sig == SIGPROF){
 #ifdef HAVE_ST_SI_SYSARG
-         int ssize = sizeof(infop.si_sysarg) / sizeof(infop.si_sysarg[0]);
+         int ssize = sizeof(args.infop.si_sysarg) / sizeof(args.infop.si_sysarg[0]);
          v_sysarg  = rb_ary_new();
 
          for(i = 0; i < ssize; i++)
-            rb_ary_push(v_sysarg, LONG2FIX(infop.si_sysarg[i]));
+            rb_ary_push(v_sysarg, LONG2FIX(args.infop.si_sysarg[i]));
 #endif
 #ifdef HAVE_ST_SI_MSTATE
-         int msize = sizeof(infop.si_mstate) / sizeof(infop.si_mstate[0]);
+         int msize = sizeof(args.infop.si_mstate) / sizeof(args.infop.si_mstate[0]);
          v_state  = rb_ary_new();
 
          for(i = 0; i < msize; i++)
-            rb_ary_push(v_state, INT2FIX(infop.si_mstate[i]));
+            rb_ary_push(v_state, INT2FIX(args.infop.si_mstate[i]));
 #endif
 #ifdef HAVE_ST_SI_FADDR
-         v_addr   = INT2FIX(infop.si_faddr);
+         v_addr   = INT2FIX(args.infop.si_faddr);
 #endif
 #ifdef HAVE_ST_SI_SYSCALL
-         v_syscall = INT2FIX(infop.si_syscall);
+         v_syscall = INT2FIX(args.infop.si_syscall);
 #endif
 #ifdef HAVE_ST_SI_NSYSARG
-         v_nsysarg = INT2FIX(infop.si_nsysarg);
+         v_nsysarg = INT2FIX(args.infop.si_nsysarg);
 #endif
 #ifdef HAVE_ST_SI_FAULT
-         v_fault   = INT2FIX(infop.si_fault);
+         v_fault   = INT2FIX(args.infop.si_fault);
 #endif
 #ifdef HAVE_ST_SI_TSTAMP
-         v_time = rb_time_new(infop.si_tstamp.tv_sec,infop.si_tstamp.tv_nsec);
+         v_time = rb_time_new(args.infop.si_tstamp.tv_sec,args.infop.si_tstamp.tv_nsec);
 #endif
       }
 
 #ifdef SIGXRES
       if(sig == SIGXRES){
-         v_entity = INT2FIX(infop.si_entity);
+         v_entity = INT2FIX(args.infop.si_entity);
       }
 #endif
 
       v_last_status = rb_struct_new(v_siginfo_struct,
-         INT2FIX(infop.si_signo),   // Probably SIGCHLD
-         INT2FIX(infop.si_errno),   // 0 means no error
-         INT2FIX(infop.si_code),    // Should be anything but SI_NOINFO
-         INT2FIX(infop.si_pid),     // Real PID that sent the signal
-         INT2FIX(infop.si_uid),     // Real UID of process that sent signal
+         INT2FIX(args.infop.si_signo),   // Probably SIGCHLD
+         INT2FIX(args.infop.si_errno),   // 0 means no error
+         INT2FIX(args.infop.si_code),    // Should be anything but SI_NOINFO
+         INT2FIX(args.infop.si_pid),     // Real PID that sent the signal
+         INT2FIX(args.infop.si_uid),     // Real UID of process that sent signal
          v_utime,
          v_status,
          v_stime,
@@ -566,7 +721,7 @@ static VALUE proc_waitid(int argc, VALUE* argv, VALUE mod){
  * be sure to leave off the leading 'SIG' substring, e.g. use 'INT' instead
  * of 'SIGINT'.
  *
- * Note that not all platforms (notably Linux) do not support automatically
+ * Note that not all platforms (notably Linux) support automatically
  * converting strings to their corresponding signal values, so it is
  * recommended that you always use an array of numeric values.
  *
@@ -600,10 +755,12 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
             if(strlcpy(signame, StringValuePtr(v_val), max) >= max)
                rb_raise(rb_eArgError, "string too large");
 #else
-            if(RSTRING(v_val)->len > max)
+            if(RSTRING_LEN(v_val) >= max)
                rb_raise(rb_eArgError, "string too large");
-            else
-               strncpy(signame, RSTRING(v_val)->ptr, max);
+            else{
+               strncpy(signame, RSTRING_PTR(v_val), max);
+               signame[max-1] = '\0';
+            }
 #endif
 
 #ifdef HAVE_STR2SIG
@@ -625,11 +782,16 @@ static VALUE proc_pause(int argc, VALUE* argv, VALUE mod){
          res = sigaction(signum, &act, &sa);
 
          if(res)
-          rb_sys_fail("sigaction");
+            rb_sys_fail("sigaction");
       }
    }
 
-   return INT2FIX(pause()); /* Should always be -1 */
+   {
+      struct pause_args pargs;
+      rb_thread_call_without_gvl(pause_without_gvl, &pargs, RUBY_UBF_PROCESS, NULL);
+      RB_GC_GUARD(v_signals);
+      return INT2FIX(pargs.result); /* Should always be -1 */
+   }
 }
 
 /*
@@ -696,8 +858,17 @@ static VALUE proc_sigsend(int argc, VALUE* argv, VALUE mod){
       char signame[SIG2STR_MAX];
       unsigned int max = SIG2STR_MAX;
 
+#ifdef HAVE_STRLCPY
       if(strlcpy(signame, StringValuePtr(v_signal), max) >= max)
         rb_raise(rb_eArgError, "string too large");
+#else
+      if(RSTRING_LEN(v_signal) >= max)
+        rb_raise(rb_eArgError, "string too large");
+      else{
+        strncpy(signame, RSTRING_PTR(v_signal), max);
+        signame[max-1] = '\0';
+      }
+#endif
 
       if(str2sig(signame,&sig) != 0)
         rb_sys_fail("str2sig");
