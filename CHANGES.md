@@ -1,4 +1,4 @@
-## 2.0.0 - 9-Jan-2026
+## 2.0.0 - 10-Jan-2026
 * Added fiber scheduler support for wait3 and wait4 methods, allowing them
   to cooperate with Ruby's fiber scheduler for non-blocking async operations.
   Note that rusage fields will be zero when using the fiber scheduler path.
