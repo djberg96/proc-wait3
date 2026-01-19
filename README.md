@@ -70,6 +70,9 @@ BSD provides another approach using sigaction handlers + `SA_RESTART`, but it re
 the signal type in advance. So, unless you want to apply the same handler to *every* type of
 signal, I don't find it especially useful.
 
+Update: As of version 2.1.0 you should no longer have to manually rescue EINTR since it's now
+being handled internally.
+
 ## Integration with Ruby's process.c
 I considered simply providing a patch to the core process.c file, but I
 decided against it for two reasons.  First, I wanted to get something
