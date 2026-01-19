@@ -1,3 +1,8 @@
+## 2.1.0 - 18-Jan-2026
+* Modified the wait methods to automatically loop on EINTR for consistent
+  cross-platform behavior. Previously you had to do this manually on some
+  platforms, e.g. OSX.
+
 ## 2.0.0 - 10-Jan-2026
 * Added fiber scheduler support for wait3 and wait4 methods, allowing them
   to cooperate with Ruby's fiber scheduler for non-blocking async operations.
